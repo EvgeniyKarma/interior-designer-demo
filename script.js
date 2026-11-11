@@ -1,26 +1,147 @@
 (() => {
+  const setPointerInput = () => document.documentElement.classList.add("is-pointer-input");
+  document.addEventListener("pointerdown", setPointerInput, true);
+  document.addEventListener("keydown", () => document.documentElement.classList.remove("is-pointer-input"), true);
+
   const drawer = document.querySelector("#site-menu");
   const closeButton = drawer.querySelector(".menu-close");
   const triggers = [...document.querySelectorAll(".menu-trigger")];
+  const faqItems = [...document.querySelectorAll(".faq-item")];
   const scrollNav = document.querySelector(".scroll-nav");
   const heroNav = document.querySelector(".header-nav--hero");
   const footer = document.querySelector("#footer");
   let footerVisible = false;
   let returnFocus = null;
+  let previousScrollY = window.scrollY;
+  let scrollingUp = false;
+  let parallaxFrame = 0;
+  const parallaxImages = [...document.querySelectorAll("[data-parallax]")];
+  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+  const footerWordmark = document.querySelector(".footer__brand > p");
+
+  const fitFooterWordmark = () => {
+    if (!footerWordmark) return;
+    footerWordmark.style.removeProperty("font-size");
+    const range = document.createRange();
+    range.selectNodeContents(footerWordmark);
+    const textWidth = range.getBoundingClientRect().width;
+    const availableWidth = footerWordmark.clientWidth;
+    const fontSize = Number.parseFloat(getComputedStyle(footerWordmark).fontSize);
+    if (textWidth > availableWidth && availableWidth > 0) {
+      footerWordmark.style.fontSize = `${fontSize * availableWidth / textWidth}px`;
+    }
+  };
+
+  const initHeadingReveal = () => {
+    fitFooterWordmark();
+    if (reducedMotion.matches || !("IntersectionObserver" in window)) {
+      window.addEventListener("resize", fitFooterWordmark, { passive: true });
+      return;
+    }
+    const targets = [...document.querySelectorAll("h1, h2, h3, .footer__brand > p")];
+    const lineTargets = targets.map((heading) => heading.matches(".faq-item__question")
+      ? heading
+      : heading.querySelector(".faq-item__question") || heading);
+    const uniqueTargets = [...new Set(lineTargets)];
+    const containers = new Map();
+
+    const renderLines = (target, container) => {
+      const original = target.dataset.headingText ?? target.textContent.trim();
+      const wasVisible = container.classList.contains("heading-motion-visible");
+      target.textContent = original;
+      const textNode = target.firstChild;
+      if (!textNode || textNode.nodeType !== Node.TEXT_NODE || !original) return;
+      const words = [...original.matchAll(/\S+/g)];
+      const lines = [];
+      words.forEach((word) => {
+        const range = document.createRange();
+        range.setStart(textNode, word.index);
+        range.setEnd(textNode, word.index + word[0].length);
+        const rect = range.getBoundingClientRect();
+        const line = lines.find((candidate) => Math.abs(candidate.top - rect.top) < 2);
+        if (line) line.end = word.index + word[0].length;
+        else lines.push({ top: rect.top, start: word.index, end: word.index + word[0].length });
+      });
+      target.replaceChildren(...lines.map((line, index) => {
+        const mask = document.createElement("span");
+        const content = document.createElement("span");
+        mask.className = "heading-line-mask";
+        content.className = "heading-line-content";
+        content.style.transitionDelay = `${index * 75}ms`;
+        content.textContent = original.slice(line.start, line.end);
+        mask.append(content);
+        return mask;
+      }));
+      container.classList.add("heading-motion-ready");
+      if (wasVisible) container.classList.add("heading-motion-visible");
+      containers.set(container, target);
+    };
+
+    const observer = new IntersectionObserver((entries) => entries.forEach((entry) => {
+      if (!entry.isIntersecting) return;
+      entry.target.classList.add("heading-motion-visible");
+      observer.unobserve(entry.target);
+    }), { threshold: 0.12, rootMargin: "0px 0px -6% 0px" });
+
+    uniqueTargets.forEach((target) => {
+      target.dataset.headingText = target.textContent.trim();
+      const container = target.closest("h1, h2, h3") || target;
+      renderLines(target, container);
+      observer.observe(container);
+    });
+
+    let resizeFrame = 0;
+    window.addEventListener("resize", () => {
+      window.cancelAnimationFrame(resizeFrame);
+      resizeFrame = window.requestAnimationFrame(() => {
+        fitFooterWordmark();
+        containers.forEach((target, container) => renderLines(target, container));
+      });
+    }, { passive: true });
+  };
 
   const syncScrollNav = () => {
     const threshold = heroNav.getBoundingClientRect().height;
-    const visible = window.scrollY >= threshold && !footerVisible;
+    const desktop = window.matchMedia("(min-width: 1200px)").matches;
+    const visible = window.scrollY >= threshold && !footerVisible && (!desktop || scrollingUp);
     scrollNav.classList.toggle("is-visible", visible);
     scrollNav.setAttribute("aria-hidden", String(!visible));
     if (visible) scrollNav.removeAttribute("inert");
     else scrollNav.setAttribute("inert", "");
   };
 
+  const updateParallax = () => {
+    parallaxFrame = 0;
+    if (reducedMotion.matches) return;
+    const viewportHeight = window.innerHeight;
+    parallaxImages.forEach((image) => {
+      const container = image.parentElement;
+      const rect = container.getBoundingClientRect();
+      const progress = Math.min(1, Math.max(0, (viewportHeight - rect.top) / (viewportHeight + rect.height)));
+      const distance = rect.height * 0.1;
+      const offset = (progress * 2 - 1) * distance;
+      image.style.setProperty("--parallax-offset", `${offset.toFixed(2)}px`);
+    });
+  };
+
+  const requestParallaxUpdate = () => {
+    if (!parallaxFrame) parallaxFrame = window.requestAnimationFrame(updateParallax);
+  };
+
+  const handleScroll = () => {
+    const currentScrollY = window.scrollY;
+    scrollingUp = currentScrollY < previousScrollY;
+    previousScrollY = currentScrollY;
+    syncScrollNav();
+    requestParallaxUpdate();
+  };
+
   const openMenu = (trigger) => {
     returnFocus = trigger;
+    drawer.hidden = false;
     drawer.inert = false;
     drawer.setAttribute("aria-hidden", "false");
+    void drawer.offsetWidth;
     drawer.classList.add("is-open");
     document.body.classList.add("menu-open");
     triggers.forEach((button) => button.setAttribute("aria-expanded", "true"));
@@ -33,9 +154,10 @@
     document.body.classList.remove("menu-open");
     triggers.forEach((button) => button.setAttribute("aria-expanded", "false"));
     const finish = (event) => {
-      if (event.target !== drawer || drawer.classList.contains("is-open")) return;
+      if (event.target !== drawer || event.propertyName !== "transform" || drawer.classList.contains("is-open")) return;
       drawer.setAttribute("aria-hidden", "true");
       drawer.inert = true;
+      drawer.hidden = true;
       drawer.removeEventListener("transitionend", finish);
     };
     drawer.addEventListener("transitionend", finish);
@@ -43,12 +165,28 @@
       if (!drawer.classList.contains("is-open")) {
         drawer.setAttribute("aria-hidden", "true");
         drawer.inert = true;
+        drawer.hidden = true;
       }
     }, 450);
     if (restoreFocus && returnFocus?.isConnected) returnFocus.focus({ preventScroll: true });
   };
 
   triggers.forEach((trigger) => trigger.addEventListener("click", () => openMenu(trigger)));
+  const setFaqItemOpen = (item, isOpen) => {
+    item.classList.toggle("faq-item--open", isOpen);
+    const trigger = item.querySelector(".faq-item__trigger");
+    const panel = item.querySelector(".faq-item__panel");
+    trigger.setAttribute("aria-expanded", String(isOpen));
+    panel.setAttribute("aria-hidden", String(!isOpen));
+    panel.inert = !isOpen;
+  };
+  faqItems.forEach((item) => {
+    const trigger = item.querySelector(".faq-item__trigger");
+    trigger.addEventListener("click", () => {
+      const shouldOpen = trigger.getAttribute("aria-expanded") !== "true";
+      faqItems.forEach((candidate) => setFaqItemOpen(candidate, candidate === item && shouldOpen));
+    });
+  });
   closeButton.addEventListener("click", () => closeMenu());
   drawer.addEventListener("click", (event) => {
     const link = event.target.closest('a[href^="#"]');
@@ -77,7 +215,15 @@
     footerObserver.observe(footer);
   }
 
-  window.addEventListener("scroll", syncScrollNav, { passive: true });
-  window.addEventListener("resize", syncScrollNav);
+  window.addEventListener("scroll", handleScroll, { passive: true });
+  window.addEventListener("resize", () => {
+    previousScrollY = window.scrollY;
+    scrollingUp = false;
+    syncScrollNav();
+    requestParallaxUpdate();
+  });
+  reducedMotion.addEventListener?.("change", requestParallaxUpdate);
+  document.fonts.ready.then(initHeadingReveal);
   syncScrollNav();
+  updateParallax();
 })();
