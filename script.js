@@ -33,76 +33,76 @@
 
   const projectGalleryImages = new Map([
     ["Квартира в природных тонах", [
-      "public/assets/project-galleries/прихожая, гардероб/12_Post.jpg",
-      "public/assets/project-galleries/кухня-гостиная/8_Post(2).jpg",
-      "public/assets/project-galleries/кухня-гостиная/3_Post.jpg",
-      "public/assets/project-galleries/детская/7_Post(3).jpg",
-      "public/assets/project-galleries/кухня-гостиная/7_Post(2).jpg",
-      "public/assets/project-galleries/детская/7_Post.jpg",
-      "public/assets/project-galleries/санузел/3_Post(2).jpg",
-      "public/assets/project-galleries/прихожая, гардероб/6_Post.jpg",
-      "public/assets/project-galleries/кухня-гостиная/1_Post.jpg",
-      "public/assets/project-galleries/кухня-гостиная/16_Post(2).jpg"
+      "public/assets/project-galleries/прихожая, гардероб/12_Post.webp",
+      "public/assets/project-galleries/кухня-гостиная/8_Post(2).webp",
+      "public/assets/project-galleries/кухня-гостиная/3_Post.webp",
+      "public/assets/project-galleries/детская/7_Post(3).webp",
+      "public/assets/project-galleries/кухня-гостиная/7_Post(2).webp",
+      "public/assets/project-galleries/детская/7_Post.webp",
+      "public/assets/project-galleries/санузел/3_Post(2).webp",
+      "public/assets/project-galleries/прихожая, гардероб/6_Post.webp",
+      "public/assets/project-galleries/кухня-гостиная/1_Post.webp",
+      "public/assets/project-galleries/кухня-гостиная/16_Post(2).webp"
     ]],
     ["Городской минимализм", [
-      "public/assets/project-galleries/детская/3_Post(3).jpg",
-      "public/assets/project-galleries/кухня-гостиная/11_Post.jpg",
-      "public/assets/project-galleries/детская/6_Post(2).jpg",
-      "public/assets/project-galleries/санузел/3_Post.jpg",
-      "public/assets/project-galleries/кухня-гостиная/12_Post.jpg",
-      "public/assets/project-galleries/кухня-гостиная/13_Post.jpg",
-      "public/assets/project-galleries/прихожая, гардероб/5_Post.jpg",
-      "public/assets/project-galleries/прихожая, гардероб/11_Post(2).jpg",
-      "public/assets/project-galleries/кухня-гостиная/8_Post(2).jpg",
-      "public/assets/project-galleries/кухня-гостиная/7_Post(2).jpg"
+      "public/assets/project-galleries/детская/3_Post(3).webp",
+      "public/assets/project-galleries/кухня-гостиная/11_Post.webp",
+      "public/assets/project-galleries/детская/6_Post(2).webp",
+      "public/assets/project-galleries/санузел/3_Post.webp",
+      "public/assets/project-galleries/кухня-гостиная/12_Post.webp",
+      "public/assets/project-galleries/кухня-гостиная/13_Post.webp",
+      "public/assets/project-galleries/прихожая, гардероб/5_Post.webp",
+      "public/assets/project-galleries/прихожая, гардероб/11_Post(2).webp",
+      "public/assets/project-galleries/кухня-гостиная/8_Post(2).webp",
+      "public/assets/project-galleries/кухня-гостиная/7_Post(2).webp"
     ]],
     ["Спокойный интерьер для семьи", [
-      "public/assets/project-galleries/санузел/4_Post.jpg",
-      "public/assets/project-galleries/кухня-гостиная/12_Post(2).jpg",
-      "public/assets/project-galleries/кухня-гостиная/13_Post(2).jpg",
-      "public/assets/project-galleries/прихожая, гардероб/9_Post(2).jpg",
-      "public/assets/project-galleries/детская/6_Post.jpg",
-      "public/assets/project-galleries/прихожая, гардероб/12_Post(2).jpg",
-      "public/assets/project-galleries/кухня-гостиная/1_Post(3).jpg",
-      "public/assets/project-galleries/прихожая, гардероб/1_Post(2).jpg",
-      "public/assets/project-galleries/детская/1_Post(2).jpg",
-      "public/assets/project-galleries/детская/5_Post(2).jpg"
+      "public/assets/project-galleries/санузел/4_Post.webp",
+      "public/assets/project-galleries/кухня-гостиная/12_Post(2).webp",
+      "public/assets/project-galleries/кухня-гостиная/13_Post(2).webp",
+      "public/assets/project-galleries/прихожая, гардероб/9_Post(2).webp",
+      "public/assets/project-galleries/детская/6_Post.webp",
+      "public/assets/project-galleries/прихожая, гардероб/12_Post(2).webp",
+      "public/assets/project-galleries/кухня-гостиная/1_Post(3).webp",
+      "public/assets/project-galleries/прихожая, гардероб/1_Post(2).webp",
+      "public/assets/project-galleries/детская/1_Post(2).webp",
+      "public/assets/project-galleries/детская/5_Post(2).webp"
     ]],
     ["Искусство простоты", [
-      "public/assets/project-galleries/кухня-гостиная/9_Post(2).jpg",
-      "public/assets/project-galleries/кухня-гостиная/13_Post(3).jpg",
-      "public/assets/project-galleries/кухня-гостиная/8_Post(2).jpg",
-      "public/assets/project-galleries/кухня-гостиная/4_Post(2).jpg",
-      "public/assets/project-galleries/кухня-гостиная/11_Post(2).jpg",
-      "public/assets/project-galleries/прихожая, гардероб/11_Post(2).jpg",
-      "public/assets/project-galleries/кухня-гостиная/5_Post.jpg",
-      "public/assets/project-galleries/кухня-гостиная/15_Post.jpg",
-      "public/assets/project-galleries/прихожая, гардероб/1_Post.jpg",
-      "public/assets/project-galleries/кухня-гостиная/13_Post.jpg"
+      "public/assets/project-galleries/кухня-гостиная/9_Post(2).webp",
+      "public/assets/project-galleries/кухня-гостиная/13_Post(3).webp",
+      "public/assets/project-galleries/кухня-гостиная/8_Post(2).webp",
+      "public/assets/project-galleries/кухня-гостиная/4_Post(2).webp",
+      "public/assets/project-galleries/кухня-гостиная/11_Post(2).webp",
+      "public/assets/project-galleries/прихожая, гардероб/11_Post(2).webp",
+      "public/assets/project-galleries/кухня-гостиная/5_Post.webp",
+      "public/assets/project-galleries/кухня-гостиная/15_Post.webp",
+      "public/assets/project-galleries/прихожая, гардероб/1_Post.webp",
+      "public/assets/project-galleries/кухня-гостиная/13_Post.webp"
     ]],
     ["Тёплая геометрия", [
-      "public/assets/project-galleries/кухня-гостиная/11_Post.jpg",
-      "public/assets/project-galleries/детская/2_Post(3).jpg",
-      "public/assets/project-galleries/кухня-гостиная/12_Post.jpg",
-      "public/assets/project-galleries/прихожая, гардероб/12_Post.jpg",
-      "public/assets/project-galleries/детская/2_Post.jpg",
-      "public/assets/project-galleries/санузел/3_Post.jpg",
-      "public/assets/project-galleries/прихожая, гардероб/3_Post.jpg",
-      "public/assets/project-galleries/санузел/3_Post(2).jpg",
-      "public/assets/project-galleries/прихожая, гардероб/11_Post(2).jpg",
-      "public/assets/project-galleries/санузел/1(2)_Post.jpg"
+      "public/assets/project-galleries/кухня-гостиная/11_Post.webp",
+      "public/assets/project-galleries/детская/2_Post(3).webp",
+      "public/assets/project-galleries/кухня-гостиная/12_Post.webp",
+      "public/assets/project-galleries/прихожая, гардероб/12_Post.webp",
+      "public/assets/project-galleries/детская/2_Post.webp",
+      "public/assets/project-galleries/санузел/3_Post.webp",
+      "public/assets/project-galleries/прихожая, гардероб/3_Post.webp",
+      "public/assets/project-galleries/санузел/3_Post(2).webp",
+      "public/assets/project-galleries/прихожая, гардероб/11_Post(2).webp",
+      "public/assets/project-galleries/санузел/1(2)_Post.webp"
     ]],
     ["Современная квартира для двоих", [
-      "public/assets/project-galleries/кухня-гостиная/8_Post(3).jpg",
-      "public/assets/project-galleries/кухня-гостиная/12_Post(2).jpg",
-      "public/assets/project-galleries/детская/4_Post.jpg",
-      "public/assets/project-galleries/кухня-гостиная/2_Post.jpg",
-      "public/assets/project-galleries/кухня-гостиная/7_Post(2).jpg",
-      "public/assets/project-galleries/кухня-гостиная/1_Post(2).jpg",
-      "public/assets/project-galleries/кухня-гостиная/2_Post(3).jpg",
-      "public/assets/project-galleries/кухня-гостиная/4_Post.jpg",
-      "public/assets/project-galleries/детская/3_Post(2).jpg",
-      "public/assets/project-galleries/прихожая, гардероб/7_Post.jpg"
+      "public/assets/project-galleries/кухня-гостиная/8_Post(3).webp",
+      "public/assets/project-galleries/кухня-гостиная/12_Post(2).webp",
+      "public/assets/project-galleries/детская/4_Post.webp",
+      "public/assets/project-galleries/кухня-гостиная/2_Post.webp",
+      "public/assets/project-galleries/кухня-гостиная/7_Post(2).webp",
+      "public/assets/project-galleries/кухня-гостиная/1_Post(2).webp",
+      "public/assets/project-galleries/кухня-гостиная/2_Post(3).webp",
+      "public/assets/project-galleries/кухня-гостиная/4_Post.webp",
+      "public/assets/project-galleries/детская/3_Post(2).webp",
+      "public/assets/project-galleries/прихожая, гардероб/7_Post.webp"
     ]]
   ]);
 
@@ -132,7 +132,8 @@
       image.alt = `${title}, фотография ${index + 1} из ${images.length}`;
       image.width = 560;
       image.height = 700;
-      image.loading = "lazy";
+      image.loading = index < 2 ? "eager" : "lazy";
+      image.fetchPriority = index === 0 ? "high" : "auto";
       image.decoding = "async";
       return image;
     }));
