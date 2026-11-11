@@ -683,7 +683,7 @@ h3 { font-size: 2rem; line-height: 1.2; }
   .footer__brand > p { font-size: min(20.5rem, calc(18.38vw - 14.7px)); }
   .footer-group__label { margin-bottom: 12px; }
   .footer-group nav,.footer-group__links { gap: 8px; padding-top: 12px; }
-  .footer__bottom { flex-direction: column; align-items: flex-start; gap: 12px; font-size: 16px; }
+  .footer__bottom { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; font-size: 16px; }
   .footer__bottom > * { order: initial; }
   .footer__groups { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 40px; }
   .menu-drawer__bar { min-height: 79px; padding: 24px 40px; }
