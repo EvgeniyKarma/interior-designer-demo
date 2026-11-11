@@ -694,8 +694,7 @@ h3 { font-size: 2rem; line-height: 1.2; }
   .drawer-group { display: flex; width: 100%; flex-direction: column; gap: 10px; }
   .drawer-group__content { padding-top: 17px; }
   .drawer-group nav,.drawer-group__links { gap: 16px; }
-  .drawer-group nav a,.drawer-group__links a { font-size: 48px; }
-  .drawer-group nav a,.drawer-group__links a { line-height: 1; letter-spacing: -.02em; }
+  .drawer-group nav a,.drawer-group__links a { font-size: 32px; line-height: 1.2; letter-spacing: -.02em; }
   .drawer-group__label { font-size: 16px; }
   .drawer-note { font-size: 13px; }
 }
@@ -792,12 +791,12 @@ h3 { font-size: 2rem; line-height: 1.2; }
   .menu-drawer__bar .brand { flex: 0 0 139px; align-items: center; }
   .menu-close { gap: 8px; font-size: 18px; }
   .menu-close img { width: 20px; height: 20px; }
-  .menu-drawer__content { flex: 0 0 auto; gap: 20px; padding: 20px; }
+  .menu-drawer__content { flex: 1 0 auto; justify-content: space-between; gap: 0; padding: 20px; }
   .drawer-groups { gap: 24px; }
   .drawer-group { display: flex; width: 100%; flex-direction: column; gap: 12px; }
   .drawer-group__label { font-size: 13px; }
   .drawer-group__content { padding-top: 12px; }
-  .drawer-group nav,.drawer-group__links { gap: 12px; }
+  .drawer-group nav,.drawer-group__links { gap: 8px; }
   .drawer-group nav a,.drawer-group__links a { font-size: 18px; line-height: 1.2; letter-spacing: -.02em; }
   .drawer-note { font-size: 13px; }
 }
