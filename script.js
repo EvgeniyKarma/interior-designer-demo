@@ -18,6 +18,135 @@
   const parallaxImages = [...document.querySelectorAll("[data-parallax]")];
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
   const footerWordmark = document.querySelector(".footer__brand > p");
+  const projectGallery = document.querySelector("#project-gallery");
+  const galleryTrack = projectGallery.querySelector(".project-gallery__track");
+  const galleryTitle = projectGallery.querySelector(".project-gallery__title");
+  const galleryClose = projectGallery.querySelector(".project-gallery__close");
+  let galleryReturnFocus = null;
+
+  const projectGalleryImages = new Map([
+    ["Квартира в природных тонах", [
+      "рендеры/прихожая, гардероб/12_Post.jpg",
+      "рендеры/кухня-гостиная/8_Post(2).jpg",
+      "рендеры/кухня-гостиная/3_Post.jpg",
+      "рендеры/детская/7_Post(3).jpg",
+      "рендеры/кухня-гостиная/7_Post(2).jpg",
+      "рендеры/детская/7_Post.jpg",
+      "рендеры/санузел/3_Post(2).jpg",
+      "рендеры/прихожая, гардероб/6_Post.jpg",
+      "рендеры/кухня-гостиная/1_Post.jpg",
+      "рендеры/кухня-гостиная/16_Post(2).jpg"
+    ]],
+    ["Городской минимализм", [
+      "рендеры/детская/3_Post(3).jpg",
+      "рендеры/кухня-гостиная/11_Post.jpg",
+      "рендеры/детская/6_Post(2).jpg",
+      "рендеры/санузел/3_Post.jpg",
+      "рендеры/кухня-гостиная/12_Post.jpg",
+      "рендеры/кухня-гостиная/13_Post.jpg",
+      "рендеры/прихожая, гардероб/5_Post.jpg",
+      "рендеры/прихожая, гардероб/11_Post(2).jpg",
+      "рендеры/кухня-гостиная/8_Post(2).jpg",
+      "рендеры/кухня-гостиная/7_Post(2).jpg"
+    ]],
+    ["Спокойный интерьер для семьи", [
+      "рендеры/санузел/4_Post.jpg",
+      "рендеры/кухня-гостиная/12_Post(2).jpg",
+      "рендеры/кухня-гостиная/13_Post(2).jpg",
+      "рендеры/прихожая, гардероб/9_Post(2).jpg",
+      "рендеры/детская/6_Post.jpg",
+      "рендеры/прихожая, гардероб/12_Post(2).jpg",
+      "рендеры/кухня-гостиная/1_Post(3).jpg",
+      "рендеры/прихожая, гардероб/1_Post(2).jpg",
+      "рендеры/детская/1_Post(2).jpg",
+      "рендеры/детская/5_Post(2).jpg"
+    ]],
+    ["Искусство простоты", [
+      "рендеры/кухня-гостиная/9_Post(2).jpg",
+      "рендеры/кухня-гостиная/13_Post(3).jpg",
+      "рендеры/кухня-гостиная/8_Post(2).jpg",
+      "рендеры/кухня-гостиная/4_Post(2).jpg",
+      "рендеры/кухня-гостиная/11_Post(2).jpg",
+      "рендеры/прихожая, гардероб/11_Post(2).jpg",
+      "рендеры/кухня-гостиная/5_Post.jpg",
+      "рендеры/кухня-гостиная/15_Post.jpg",
+      "рендеры/прихожая, гардероб/1_Post.jpg",
+      "рендеры/кухня-гостиная/13_Post.jpg"
+    ]],
+    ["Тёплая геометрия", [
+      "рендеры/кухня-гостиная/11_Post.jpg",
+      "рендеры/детская/2_Post(3).jpg",
+      "рендеры/кухня-гостиная/12_Post.jpg",
+      "рендеры/прихожая, гардероб/12_Post.jpg",
+      "рендеры/детская/2_Post.jpg",
+      "рендеры/санузел/3_Post.jpg",
+      "рендеры/прихожая, гардероб/3_Post.jpg",
+      "рендеры/санузел/3_Post(2).jpg",
+      "рендеры/прихожая, гардероб/11_Post(2).jpg",
+      "рендеры/санузел/1(2)_Post.jpg"
+    ]],
+    ["Современная квартира для двоих", [
+      "рендеры/кухня-гостиная/8_Post(3).jpg",
+      "рендеры/кухня-гостиная/12_Post(2).jpg",
+      "рендеры/детская/4_Post.jpg",
+      "рендеры/кухня-гостиная/2_Post.jpg",
+      "рендеры/кухня-гостиная/7_Post(2).jpg",
+      "рендеры/кухня-гостиная/1_Post(2).jpg",
+      "рендеры/кухня-гостиная/2_Post(3).jpg",
+      "рендеры/кухня-гостиная/4_Post.jpg",
+      "рендеры/детская/3_Post(2).jpg",
+      "рендеры/прихожая, гардероб/7_Post.jpg"
+    ]]
+  ]);
+
+  const closeProjectGallery = () => {
+    if (!projectGallery.open) return;
+    projectGallery.close();
+    document.body.classList.remove("gallery-open");
+    if (galleryReturnFocus?.isConnected) galleryReturnFocus.focus({ preventScroll: true });
+  };
+
+  const openProjectGallery = (trigger) => {
+    const title = trigger.closest(".work-card")?.querySelector(".work-card__caption h3")?.textContent.replace(/\s+/g, " ").trim();
+    const images = projectGalleryImages.get(title);
+    if (!images) return;
+
+    galleryReturnFocus = trigger;
+    galleryTitle.textContent = title;
+    galleryTrack.replaceChildren(...images.map((src, index) => {
+      const image = document.createElement("img");
+      image.src = src;
+      image.alt = `${title}, фотография ${index + 1} из ${images.length}`;
+      image.width = 560;
+      image.height = 700;
+      image.loading = "lazy";
+      image.decoding = "async";
+      return image;
+    }));
+    galleryTrack.scrollLeft = 0;
+    projectGallery.showModal();
+    document.body.classList.add("gallery-open");
+    galleryClose.focus({ preventScroll: true });
+  };
+
+  document.querySelectorAll(".work-card__media").forEach((trigger) => {
+    trigger.addEventListener("click", () => openProjectGallery(trigger));
+  });
+  galleryClose.addEventListener("click", closeProjectGallery);
+  projectGallery.addEventListener("click", (event) => {
+    if (event.target === projectGallery) closeProjectGallery();
+  });
+  projectGallery.addEventListener("cancel", (event) => {
+    event.preventDefault();
+    closeProjectGallery();
+  });
+  galleryTrack.addEventListener("wheel", (event) => {
+    if (window.matchMedia("(min-width: 1200px)").matches && Math.abs(event.deltaY) > Math.abs(event.deltaX)) {
+      const multiplier = event.deltaMode === WheelEvent.DOM_DELTA_LINE ? 16 : event.deltaMode === WheelEvent.DOM_DELTA_PAGE ? window.innerHeight : 1;
+      galleryTrack.scrollLeft += event.deltaY * multiplier;
+      event.preventDefault();
+    }
+  }, { passive: false });
 
   const fitFooterWordmark = () => {
     if (!footerWordmark) return;
