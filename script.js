@@ -1,7 +1,13 @@
 (() => {
-  const setPointerInput = () => document.documentElement.classList.add("is-pointer-input");
+  const setPointerInput = () => {
+    document.documentElement.classList.add("is-pointer-input");
+    document.documentElement.classList.remove("gallery-suppress-hover");
+  };
   document.addEventListener("pointerdown", setPointerInput, true);
-  document.addEventListener("keydown", () => document.documentElement.classList.remove("is-pointer-input"), true);
+  document.addEventListener("pointermove", () => document.documentElement.classList.remove("gallery-suppress-hover"), true);
+  document.addEventListener("keydown", () => {
+    document.documentElement.classList.remove("is-pointer-input", "gallery-suppress-hover");
+  }, true);
 
   const drawer = document.querySelector("#site-menu");
   const closeButton = drawer.querySelector(".menu-close");
@@ -23,79 +29,80 @@
   const galleryTitle = projectGallery.querySelector(".project-gallery__title");
   const galleryClose = projectGallery.querySelector(".project-gallery__close");
   let galleryReturnFocus = null;
+  let galleryOpenedByKeyboard = false;
 
   const projectGalleryImages = new Map([
     ["Квартира в природных тонах", [
-      "рендеры/прихожая, гардероб/12_Post.jpg",
-      "рендеры/кухня-гостиная/8_Post(2).jpg",
-      "рендеры/кухня-гостиная/3_Post.jpg",
-      "рендеры/детская/7_Post(3).jpg",
-      "рендеры/кухня-гостиная/7_Post(2).jpg",
-      "рендеры/детская/7_Post.jpg",
-      "рендеры/санузел/3_Post(2).jpg",
-      "рендеры/прихожая, гардероб/6_Post.jpg",
-      "рендеры/кухня-гостиная/1_Post.jpg",
-      "рендеры/кухня-гостиная/16_Post(2).jpg"
+      "public/assets/project-galleries/прихожая, гардероб/12_Post.jpg",
+      "public/assets/project-galleries/кухня-гостиная/8_Post(2).jpg",
+      "public/assets/project-galleries/кухня-гостиная/3_Post.jpg",
+      "public/assets/project-galleries/детская/7_Post(3).jpg",
+      "public/assets/project-galleries/кухня-гостиная/7_Post(2).jpg",
+      "public/assets/project-galleries/детская/7_Post.jpg",
+      "public/assets/project-galleries/санузел/3_Post(2).jpg",
+      "public/assets/project-galleries/прихожая, гардероб/6_Post.jpg",
+      "public/assets/project-galleries/кухня-гостиная/1_Post.jpg",
+      "public/assets/project-galleries/кухня-гостиная/16_Post(2).jpg"
     ]],
     ["Городской минимализм", [
-      "рендеры/детская/3_Post(3).jpg",
-      "рендеры/кухня-гостиная/11_Post.jpg",
-      "рендеры/детская/6_Post(2).jpg",
-      "рендеры/санузел/3_Post.jpg",
-      "рендеры/кухня-гостиная/12_Post.jpg",
-      "рендеры/кухня-гостиная/13_Post.jpg",
-      "рендеры/прихожая, гардероб/5_Post.jpg",
-      "рендеры/прихожая, гардероб/11_Post(2).jpg",
-      "рендеры/кухня-гостиная/8_Post(2).jpg",
-      "рендеры/кухня-гостиная/7_Post(2).jpg"
+      "public/assets/project-galleries/детская/3_Post(3).jpg",
+      "public/assets/project-galleries/кухня-гостиная/11_Post.jpg",
+      "public/assets/project-galleries/детская/6_Post(2).jpg",
+      "public/assets/project-galleries/санузел/3_Post.jpg",
+      "public/assets/project-galleries/кухня-гостиная/12_Post.jpg",
+      "public/assets/project-galleries/кухня-гостиная/13_Post.jpg",
+      "public/assets/project-galleries/прихожая, гардероб/5_Post.jpg",
+      "public/assets/project-galleries/прихожая, гардероб/11_Post(2).jpg",
+      "public/assets/project-galleries/кухня-гостиная/8_Post(2).jpg",
+      "public/assets/project-galleries/кухня-гостиная/7_Post(2).jpg"
     ]],
     ["Спокойный интерьер для семьи", [
-      "рендеры/санузел/4_Post.jpg",
-      "рендеры/кухня-гостиная/12_Post(2).jpg",
-      "рендеры/кухня-гостиная/13_Post(2).jpg",
-      "рендеры/прихожая, гардероб/9_Post(2).jpg",
-      "рендеры/детская/6_Post.jpg",
-      "рендеры/прихожая, гардероб/12_Post(2).jpg",
-      "рендеры/кухня-гостиная/1_Post(3).jpg",
-      "рендеры/прихожая, гардероб/1_Post(2).jpg",
-      "рендеры/детская/1_Post(2).jpg",
-      "рендеры/детская/5_Post(2).jpg"
+      "public/assets/project-galleries/санузел/4_Post.jpg",
+      "public/assets/project-galleries/кухня-гостиная/12_Post(2).jpg",
+      "public/assets/project-galleries/кухня-гостиная/13_Post(2).jpg",
+      "public/assets/project-galleries/прихожая, гардероб/9_Post(2).jpg",
+      "public/assets/project-galleries/детская/6_Post.jpg",
+      "public/assets/project-galleries/прихожая, гардероб/12_Post(2).jpg",
+      "public/assets/project-galleries/кухня-гостиная/1_Post(3).jpg",
+      "public/assets/project-galleries/прихожая, гардероб/1_Post(2).jpg",
+      "public/assets/project-galleries/детская/1_Post(2).jpg",
+      "public/assets/project-galleries/детская/5_Post(2).jpg"
     ]],
     ["Искусство простоты", [
-      "рендеры/кухня-гостиная/9_Post(2).jpg",
-      "рендеры/кухня-гостиная/13_Post(3).jpg",
-      "рендеры/кухня-гостиная/8_Post(2).jpg",
-      "рендеры/кухня-гостиная/4_Post(2).jpg",
-      "рендеры/кухня-гостиная/11_Post(2).jpg",
-      "рендеры/прихожая, гардероб/11_Post(2).jpg",
-      "рендеры/кухня-гостиная/5_Post.jpg",
-      "рендеры/кухня-гостиная/15_Post.jpg",
-      "рендеры/прихожая, гардероб/1_Post.jpg",
-      "рендеры/кухня-гостиная/13_Post.jpg"
+      "public/assets/project-galleries/кухня-гостиная/9_Post(2).jpg",
+      "public/assets/project-galleries/кухня-гостиная/13_Post(3).jpg",
+      "public/assets/project-galleries/кухня-гостиная/8_Post(2).jpg",
+      "public/assets/project-galleries/кухня-гостиная/4_Post(2).jpg",
+      "public/assets/project-galleries/кухня-гостиная/11_Post(2).jpg",
+      "public/assets/project-galleries/прихожая, гардероб/11_Post(2).jpg",
+      "public/assets/project-galleries/кухня-гостиная/5_Post.jpg",
+      "public/assets/project-galleries/кухня-гостиная/15_Post.jpg",
+      "public/assets/project-galleries/прихожая, гардероб/1_Post.jpg",
+      "public/assets/project-galleries/кухня-гостиная/13_Post.jpg"
     ]],
     ["Тёплая геометрия", [
-      "рендеры/кухня-гостиная/11_Post.jpg",
-      "рендеры/детская/2_Post(3).jpg",
-      "рендеры/кухня-гостиная/12_Post.jpg",
-      "рендеры/прихожая, гардероб/12_Post.jpg",
-      "рендеры/детская/2_Post.jpg",
-      "рендеры/санузел/3_Post.jpg",
-      "рендеры/прихожая, гардероб/3_Post.jpg",
-      "рендеры/санузел/3_Post(2).jpg",
-      "рендеры/прихожая, гардероб/11_Post(2).jpg",
-      "рендеры/санузел/1(2)_Post.jpg"
+      "public/assets/project-galleries/кухня-гостиная/11_Post.jpg",
+      "public/assets/project-galleries/детская/2_Post(3).jpg",
+      "public/assets/project-galleries/кухня-гостиная/12_Post.jpg",
+      "public/assets/project-galleries/прихожая, гардероб/12_Post.jpg",
+      "public/assets/project-galleries/детская/2_Post.jpg",
+      "public/assets/project-galleries/санузел/3_Post.jpg",
+      "public/assets/project-galleries/прихожая, гардероб/3_Post.jpg",
+      "public/assets/project-galleries/санузел/3_Post(2).jpg",
+      "public/assets/project-galleries/прихожая, гардероб/11_Post(2).jpg",
+      "public/assets/project-galleries/санузел/1(2)_Post.jpg"
     ]],
     ["Современная квартира для двоих", [
-      "рендеры/кухня-гостиная/8_Post(3).jpg",
-      "рендеры/кухня-гостиная/12_Post(2).jpg",
-      "рендеры/детская/4_Post.jpg",
-      "рендеры/кухня-гостиная/2_Post.jpg",
-      "рендеры/кухня-гостиная/7_Post(2).jpg",
-      "рендеры/кухня-гостиная/1_Post(2).jpg",
-      "рендеры/кухня-гостиная/2_Post(3).jpg",
-      "рендеры/кухня-гостиная/4_Post.jpg",
-      "рендеры/детская/3_Post(2).jpg",
-      "рендеры/прихожая, гардероб/7_Post.jpg"
+      "public/assets/project-galleries/кухня-гостиная/8_Post(3).jpg",
+      "public/assets/project-galleries/кухня-гостиная/12_Post(2).jpg",
+      "public/assets/project-galleries/детская/4_Post.jpg",
+      "public/assets/project-galleries/кухня-гостиная/2_Post.jpg",
+      "public/assets/project-galleries/кухня-гостиная/7_Post(2).jpg",
+      "public/assets/project-galleries/кухня-гостиная/1_Post(2).jpg",
+      "public/assets/project-galleries/кухня-гостиная/2_Post(3).jpg",
+      "public/assets/project-galleries/кухня-гостиная/4_Post.jpg",
+      "public/assets/project-galleries/детская/3_Post(2).jpg",
+      "public/assets/project-galleries/прихожая, гардероб/7_Post.jpg"
     ]]
   ]);
 
@@ -103,7 +110,12 @@
     if (!projectGallery.open) return;
     projectGallery.close();
     document.body.classList.remove("gallery-open");
-    if (galleryReturnFocus?.isConnected) galleryReturnFocus.focus({ preventScroll: true });
+    document.documentElement.classList.add("gallery-suppress-hover");
+    if (galleryReturnFocus?.isConnected) {
+      if (galleryOpenedByKeyboard) galleryReturnFocus.focus({ preventScroll: true });
+      else galleryReturnFocus.blur();
+    }
+    galleryReturnFocus = null;
   };
 
   const openProjectGallery = (trigger) => {
@@ -112,6 +124,7 @@
     if (!images) return;
 
     galleryReturnFocus = trigger;
+    galleryOpenedByKeyboard = !document.documentElement.classList.contains("is-pointer-input");
     galleryTitle.textContent = title;
     galleryTrack.replaceChildren(...images.map((src, index) => {
       const image = document.createElement("img");
