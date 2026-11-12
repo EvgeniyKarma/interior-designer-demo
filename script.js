@@ -203,6 +203,35 @@
     return coordinate(time, 0, 1);
   };
 
+  const animateGalleryTrackTo = (startScrollLeft, prepare, complete) => {
+    if (galleryAnimationFrame) window.cancelAnimationFrame(galleryAnimationFrame);
+    galleryIsAnimating = true;
+    const duration = reducedMotion.matches ? 0 : 500;
+    let startedAt = null;
+    let endScrollLeft = startScrollLeft;
+
+    const step = (now) => {
+      if (startedAt === null) {
+        endScrollLeft = prepare();
+        startedAt = now;
+      }
+      const progress = duration === 0 ? 1 : Math.min(1, (now - startedAt) / duration);
+      const eased = easeGalleryProgress(progress);
+      galleryTrack.scrollLeft = startScrollLeft + (endScrollLeft - startScrollLeft) * eased;
+      updateGalleryParallax();
+      if (progress < 1) {
+        galleryAnimationFrame = window.requestAnimationFrame(step);
+        return;
+      }
+      galleryAnimationFrame = 0;
+      galleryTrack.scrollLeft = endScrollLeft;
+      galleryIsAnimating = false;
+      complete?.();
+    };
+
+    galleryAnimationFrame = window.requestAnimationFrame(step);
+  };
+
   const finishGalleryButtonTransition = (target) => {
     const photoIndex = Number(target.dataset.photoIndex);
     const centralSlide = Number(target.dataset.copyIndex) === 1
@@ -226,39 +255,16 @@
   };
 
   const animateToGallerySlide = (target) => {
-    if (!target) return;
-    if (galleryAnimationFrame) window.cancelAnimationFrame(galleryAnimationFrame);
+    if (!target || projectGallery.classList.contains("is-opening")) return;
     window.clearTimeout(gallerySettleTimer);
     gallerySettleTimer = 0;
     galleryIsRecentering = false;
-    galleryIsAnimating = true;
-
     const startScrollLeft = galleryTrack.scrollLeft;
     galleryNavigationSlide = target;
-    const duration = reducedMotion.matches ? 0 : 500;
-    let startedAt = null;
-    let endScrollLeft = startScrollLeft;
-
-    const step = (now) => {
-      if (startedAt === null) {
+    animateGalleryTrackTo(startScrollLeft, () => {
         setActiveGallerySlide(target);
-        endScrollLeft = getGalleryTargetScrollLeft(target);
-        startedAt = now;
-      }
-      const progress = duration === 0 ? 1 : Math.min(1, (now - startedAt) / duration);
-      const eased = easeGalleryProgress(progress);
-      galleryTrack.scrollLeft = startScrollLeft + (endScrollLeft - startScrollLeft) * eased;
-      updateGalleryParallax();
-      if (progress < 1) {
-        galleryAnimationFrame = window.requestAnimationFrame(step);
-        return;
-      }
-      galleryAnimationFrame = 0;
-      galleryTrack.scrollLeft = endScrollLeft;
-      finishGalleryButtonTransition(target);
-    };
-
-    galleryAnimationFrame = window.requestAnimationFrame(step);
+        return getGalleryTargetScrollLeft(target);
+      }, () => finishGalleryButtonTransition(target));
   };
 
   const updateGalleryParallax = () => {
@@ -347,6 +353,7 @@
     if (galleryAnimationFrame) window.cancelAnimationFrame(galleryAnimationFrame);
     galleryAnimationFrame = 0;
     galleryIsAnimating = false;
+    projectGallery.classList.remove("is-opening");
     galleryActiveSlide = null;
     galleryNavigationSlide = null;
     document.body.classList.remove("gallery-open");
@@ -401,12 +408,24 @@
     galleryActiveSlide.classList.add("is-active");
     galleryTrack.tabIndex = isDesktopGallery() ? -1 : 0;
     galleryIsRecentering = true;
+    galleryTrack.classList.remove("is-recentering");
     galleryTrack.scrollLeft = 0;
+    projectGallery.classList.add("is-opening");
     projectGallery.showModal();
     document.body.classList.add("gallery-open");
-    window.requestAnimationFrame(() => {
+    galleryAnimationFrame = window.requestAnimationFrame(() => {
+      galleryAnimationFrame = 0;
       centerGallerySlide(galleryActiveSlide);
-      window.requestAnimationFrame(() => { galleryIsRecentering = false; });
+      updateGalleryParallax();
+      const startScrollLeft = galleryTrack.scrollLeft;
+      animateGalleryTrackTo(startScrollLeft, () => {
+        projectGallery.classList.remove("is-opening");
+        return getGalleryTargetScrollLeft(galleryActiveSlide);
+      }, () => {
+        galleryNavigationSlide = galleryActiveSlide;
+        galleryIsRecentering = false;
+        updateGalleryParallax();
+      });
     });
     galleryClose.focus({ preventScroll: true });
   };
@@ -420,9 +439,7 @@
   galleryButtons.forEach((button) => {
     button.addEventListener("click", () => {
       const slides = [...galleryTrack.querySelectorAll(".project-gallery__slide")];
-      const currentSlide = isDesktopGallery()
-        ? galleryNavigationSlide || galleryActiveSlide
-        : findCenteredGallerySlide();
+      const currentSlide = galleryNavigationSlide || galleryActiveSlide;
       const currentIndex = slides.indexOf(currentSlide);
       const direction = Number(button.dataset.galleryDirection);
       const target = slides[currentIndex + direction];
@@ -537,12 +554,17 @@
     if (galleryAnimationFrame) window.cancelAnimationFrame(galleryAnimationFrame);
     galleryAnimationFrame = 0;
     galleryIsAnimating = false;
+    projectGallery.classList.remove("is-opening");
     galleryTrack.tabIndex = isDesktopGallery() ? -1 : 0;
     galleryNavigationSlide = galleryActiveSlide;
     galleryIsRecentering = true;
+    galleryTrack.classList.add("is-recentering");
     window.requestAnimationFrame(() => {
       centerGallerySlide(galleryNavigationSlide || galleryActiveSlide);
-      window.requestAnimationFrame(() => { galleryIsRecentering = false; });
+      window.requestAnimationFrame(() => {
+        galleryTrack.classList.remove("is-recentering");
+        galleryIsRecentering = false;
+      });
     });
   }, { passive: true });
 
