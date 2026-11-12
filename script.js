@@ -681,32 +681,24 @@
   const aboutStoryCopies = aboutScene ? [...aboutScene.querySelectorAll(".about__desktop-copy")] : [];
   let aboutStoryReady = false;
   let aboutStoryStartY = null;
-  let aboutSceneStartY = 0;
   let aboutStoryTravel = [];
   let aboutIntroMarginTop = 0;
   let aboutPinStartY = 0;
+  let aboutMaskScrollStartY = null;
+  let aboutMaskStartWidth = 0;
+  let aboutMaskEndWidth = 0;
+  const aboutMaskScrollDistance = 500;
 
   const measureAboutStory = () => {
     if (!aboutRunway || !aboutStoryCopies.length || !aboutIntro) return;
     aboutStoryTravel = aboutStoryCopies.map((copy) => window.innerHeight + copy.getBoundingClientRect().height);
     const tail = aboutStoryTravel.reduce((sum, distance) => sum + distance, 0);
-    const wasExpanded = aboutIntro.classList.contains("is-expanded");
-    const previousTransition = aboutPortrait.style.transition;
-    if (wasExpanded) {
-      aboutPortrait.style.transition = "none";
-      aboutIntro.classList.remove("is-expanded");
-      void aboutPortrait.offsetWidth;
-    }
-    const compactHeight = aboutIntro.getBoundingClientRect().height;
-    if (wasExpanded) {
-      aboutIntro.classList.add("is-expanded");
-      void aboutPortrait.offsetWidth;
-      aboutPortrait.style.transition = previousTransition;
-    }
-    aboutIntroMarginTop = Math.max(0, (window.innerHeight - compactHeight) / 2);
-    aboutIntro.style.marginTop = `${aboutIntroMarginTop}px`;
-
     if (aboutStoryStartY === null) {
+      if (!aboutIntro.classList.contains("is-expanded")) {
+        const compactHeight = aboutIntro.getBoundingClientRect().height;
+        aboutIntroMarginTop = Math.max(0, (window.innerHeight - compactHeight) / 2);
+        aboutIntro.style.marginTop = `${aboutIntroMarginTop}px`;
+      }
       const expandedHeight = aboutIntro.getBoundingClientRect().height;
       aboutRunway.style.height = `${aboutIntroMarginTop + window.innerHeight * 2 + tail + expandedHeight}px`;
       return;
@@ -744,6 +736,14 @@
     });
   };
 
+  const beginAboutStoryText = () => {
+    if (!aboutIntro.classList.contains("is-expanded")) return;
+    aboutStoryStartY = window.scrollY;
+    placeAboutStoryCopies();
+    measureAboutStory();
+    updateAboutStory();
+  };
+
   const updateAboutStory = () => {
     if (!aboutScene || !window.matchMedia("(min-width: 1200px)").matches) return;
     if (!aboutStoryReady) initAboutStory();
@@ -757,13 +757,19 @@
     if (shouldExpand && !aboutIntro.classList.contains("is-expanded")) {
       aboutStoryStartY = null;
       measureAboutStory();
+      aboutMaskStartWidth = aboutPortrait.getBoundingClientRect().width;
       aboutIntro.classList.add("is-expanded");
-      if (reducedMotion.matches) {
-        aboutStoryStartY = window.scrollY;
-        placeAboutStoryCopies();
-        measureAboutStory();
+      aboutMaskEndWidth = aboutPortrait.getBoundingClientRect().width;
+      aboutMaskScrollStartY = window.scrollY;
+      aboutPortrait.style.width = `${aboutMaskStartWidth}px`;
+      if (reducedMotion.matches || Math.abs(aboutMaskEndWidth - aboutMaskStartWidth) < 1) {
+        aboutPortrait.style.width = `${aboutMaskEndWidth}px`;
+        aboutMaskScrollStartY = null;
+        beginAboutStoryText();
       }
     } else if (!shouldExpand && aboutIntro.classList.contains("is-expanded")) {
+      aboutMaskScrollStartY = null;
+      aboutPortrait.style.removeProperty("width");
       aboutIntro.classList.remove("is-expanded");
       aboutStoryStartY = null;
       aboutStoryCopies.forEach((copy) => {
@@ -773,6 +779,21 @@
       });
       aboutPortrait.querySelector("img").style.setProperty("--about-image-shift", "0px");
       measureAboutStory();
+    }
+
+    if (aboutMaskScrollStartY !== null) {
+      const progress = Math.min(1, Math.max(0, (window.scrollY - aboutMaskScrollStartY) / aboutMaskScrollDistance));
+      const eased = progress < 0.5
+        ? 4 * progress ** 3
+        : 1 - ((-2 * progress + 2) ** 3) / 2;
+      const width = aboutMaskStartWidth + (aboutMaskEndWidth - aboutMaskStartWidth) * eased;
+      aboutPortrait.style.width = `${width.toFixed(2)}px`;
+      if (progress >= 1) {
+        aboutPortrait.style.width = `${aboutMaskEndWidth}px`;
+        aboutMaskScrollStartY = null;
+        beginAboutStoryText();
+      }
+      return;
     }
     if (aboutStoryStartY === null) return;
 
@@ -798,14 +819,6 @@
       elapsed = Math.max(0, elapsed - distance);
     });
   };
-
-  aboutPortrait?.addEventListener("transitionend", (event) => {
-    if (event.propertyName !== "width" || !aboutIntro.classList.contains("is-expanded")) return;
-    aboutStoryStartY = window.scrollY;
-    placeAboutStoryCopies();
-    measureAboutStory();
-    updateAboutStory();
-  });
 
   const requestParallaxUpdate = () => {
     if (!parallaxFrame) parallaxFrame = window.requestAnimationFrame(updateParallax);
