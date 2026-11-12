@@ -106,6 +106,46 @@
     ]]
   ]);
 
+  const preloadedGalleryImages = new Set();
+  const shouldSkipGalleryPrefetch = () => {
+    const connection = navigator.connection;
+    return connection?.saveData || /(^|-)2g$/.test(connection?.effectiveType || "");
+  };
+  const preloadGalleryImage = (src) => {
+    if (preloadedGalleryImages.has(src)) return;
+    preloadedGalleryImages.add(src);
+    const image = new Image();
+    image.decoding = "async";
+    image.fetchPriority = "low";
+    image.src = src;
+  };
+  const getProjectGalleryImages = (trigger) => {
+    const title = trigger.closest(".work-card")?.querySelector(".work-card__caption h3")?.textContent.replace(/\s+/g, " ").trim();
+    return projectGalleryImages.get(title);
+  };
+  const warmProjectGallery = (trigger) => {
+    if (shouldSkipGalleryPrefetch()) return;
+    getProjectGalleryImages(trigger)?.forEach(preloadGalleryImage);
+  };
+
+  const warmGalleryLeads = () => {
+    if (shouldSkipGalleryPrefetch()) return;
+    const leads = [...new Set([...projectGalleryImages.values()].map((images) => images[0]))];
+    let index = 0;
+    const warmNext = () => {
+      if (index >= leads.length || shouldSkipGalleryPrefetch()) return;
+      preloadGalleryImage(leads[index++]);
+      if (index < leads.length) {
+        if ("requestIdleCallback" in window) window.requestIdleCallback(warmNext, { timeout: 2000 });
+        else window.setTimeout(warmNext, 400);
+      }
+    };
+    if ("requestIdleCallback" in window) window.requestIdleCallback(warmNext, { timeout: 2000 });
+    else window.setTimeout(warmNext, 400);
+  };
+  if (document.readyState === "complete") warmGalleryLeads();
+  else window.addEventListener("load", warmGalleryLeads, { once: true });
+
   const closeProjectGallery = () => {
     if (!projectGallery.open) return;
     projectGallery.close();
@@ -132,8 +172,8 @@
       image.alt = `${title}, фотография ${index + 1} из ${images.length}`;
       image.width = 560;
       image.height = 700;
-      image.loading = index < 2 ? "eager" : "lazy";
-      image.fetchPriority = index === 0 ? "high" : "auto";
+      image.loading = "eager";
+      image.fetchPriority = index === 0 ? "high" : "low";
       image.decoding = "async";
       return image;
     }));
@@ -144,6 +184,8 @@
   };
 
   document.querySelectorAll(".work-card__media").forEach((trigger) => {
+    trigger.addEventListener("pointerenter", () => warmProjectGallery(trigger), { once: true });
+    trigger.addEventListener("focus", () => warmProjectGallery(trigger), { once: true });
     trigger.addEventListener("click", () => openProjectGallery(trigger));
   });
   galleryClose.addEventListener("click", closeProjectGallery);
