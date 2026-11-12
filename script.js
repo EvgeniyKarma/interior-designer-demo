@@ -587,8 +587,7 @@
       window.addEventListener("resize", fitFooterWordmark, { passive: true });
       return;
     }
-    const targets = [...document.querySelectorAll("h1, h2, h3, .footer__brand > p")]
-      .filter((heading) => !heading.closest(".about__desktop-title"));
+    const targets = [...document.querySelectorAll("h1, h2, h3, .footer__brand > p")];
     const lineTargets = targets.map((heading) => heading.matches(".faq-item__question")
       ? heading
       : heading.querySelector(".faq-item__question") || heading);
@@ -682,30 +681,20 @@
   let aboutStoryReady = false;
   let aboutStoryStartY = null;
   let aboutStoryTravel = [];
-  let aboutIntroMarginTop = 0;
   let aboutPinStartY = 0;
-  let aboutMaskScrollStartY = null;
-  let aboutMaskStartWidth = 0;
-  let aboutMaskEndWidth = 0;
-  const aboutMaskScrollDistance = 500;
 
   const measureAboutStory = () => {
     if (!aboutRunway || !aboutStoryCopies.length || !aboutIntro) return;
     aboutStoryTravel = aboutStoryCopies.map((copy) => window.innerHeight + copy.getBoundingClientRect().height);
     const tail = aboutStoryTravel.reduce((sum, distance) => sum + distance, 0);
     if (aboutStoryStartY === null) {
-      if (!aboutIntro.classList.contains("is-expanded")) {
-        const compactHeight = aboutIntro.getBoundingClientRect().height;
-        aboutIntroMarginTop = Math.max(0, (window.innerHeight - compactHeight) / 2);
-        aboutIntro.style.marginTop = `${aboutIntroMarginTop}px`;
-      }
       const expandedHeight = aboutIntro.getBoundingClientRect().height;
-      aboutRunway.style.height = `${aboutIntroMarginTop + window.innerHeight * 2 + tail + expandedHeight}px`;
+      aboutRunway.style.height = `${window.innerHeight * 2 + tail + expandedHeight}px`;
       return;
     }
     const sceneStartY = window.scrollY + aboutScene.getBoundingClientRect().top;
     const expandedHeight = aboutIntro.getBoundingClientRect().height;
-    const stickyTop = window.innerHeight * 0.083;
+    const stickyTop = Number.parseFloat(getComputedStyle(aboutIntro).top) || 0;
     const releaseScrollY = aboutStoryStartY + tail;
     aboutRunway.style.height = `${Math.max(window.innerHeight, releaseScrollY - sceneStartY + stickyTop + expandedHeight)}px`;
   };
@@ -736,64 +725,28 @@
     });
   };
 
-  const beginAboutStoryText = () => {
-    if (!aboutIntro.classList.contains("is-expanded")) return;
-    aboutStoryStartY = window.scrollY;
-    placeAboutStoryCopies();
-    measureAboutStory();
-    updateAboutStory();
-  };
-
   const updateAboutStory = () => {
     if (!aboutScene || !window.matchMedia("(min-width: 1200px)").matches) return;
     if (!aboutStoryReady) initAboutStory();
     if (!aboutStoryReady) return;
 
     const sceneStartY = window.scrollY + aboutScene.getBoundingClientRect().top;
-    const stickyTop = window.innerHeight * 0.083;
-    aboutPinStartY = sceneStartY + aboutIntroMarginTop - stickyTop;
-    const shouldExpand = window.scrollY >= aboutPinStartY;
+    const stickyTop = Number.parseFloat(getComputedStyle(aboutIntro).top) || 0;
+    aboutPinStartY = sceneStartY - stickyTop;
 
-    if (shouldExpand && !aboutIntro.classList.contains("is-expanded")) {
-      aboutStoryStartY = null;
-      measureAboutStory();
-      aboutMaskStartWidth = aboutPortrait.getBoundingClientRect().width;
-      aboutIntro.classList.add("is-expanded");
-      aboutMaskEndWidth = aboutPortrait.getBoundingClientRect().width;
-      aboutMaskScrollStartY = window.scrollY;
-      aboutPortrait.style.width = `${aboutMaskStartWidth}px`;
-      if (reducedMotion.matches || Math.abs(aboutMaskEndWidth - aboutMaskStartWidth) < 1) {
-        aboutPortrait.style.width = `${aboutMaskEndWidth}px`;
-        aboutMaskScrollStartY = null;
-        beginAboutStoryText();
-      }
-    } else if (!shouldExpand && aboutIntro.classList.contains("is-expanded")) {
-      aboutMaskScrollStartY = null;
-      aboutPortrait.style.removeProperty("width");
-      aboutIntro.classList.remove("is-expanded");
+    if (window.scrollY < aboutPinStartY && aboutStoryStartY !== null) {
       aboutStoryStartY = null;
       aboutStoryCopies.forEach((copy) => {
         copy.style.top = "-10000px";
         copy.dataset.highlightedCount = "0";
         copy.querySelectorAll("span.is-highlighted").forEach((span) => span.classList.remove("is-highlighted"));
       });
-      aboutPortrait.querySelector("img").style.setProperty("--about-image-shift", "0px");
       measureAboutStory();
     }
-
-    if (aboutMaskScrollStartY !== null) {
-      const progress = Math.min(1, Math.max(0, (window.scrollY - aboutMaskScrollStartY) / aboutMaskScrollDistance));
-      const eased = progress < 0.5
-        ? 4 * progress ** 3
-        : 1 - ((-2 * progress + 2) ** 3) / 2;
-      const width = aboutMaskStartWidth + (aboutMaskEndWidth - aboutMaskStartWidth) * eased;
-      aboutPortrait.style.width = `${width.toFixed(2)}px`;
-      if (progress >= 1) {
-        aboutPortrait.style.width = `${aboutMaskEndWidth}px`;
-        aboutMaskScrollStartY = null;
-        beginAboutStoryText();
-      }
-      return;
+    if (aboutStoryStartY === null && window.scrollY >= aboutPinStartY) {
+      aboutStoryStartY = window.scrollY;
+      placeAboutStoryCopies();
+      measureAboutStory();
     }
     if (aboutStoryStartY === null) return;
 
@@ -917,7 +870,7 @@
     previousScrollY = window.scrollY;
     scrollingUp = false;
     syncScrollNav();
-    if (!aboutIntro.classList.contains("is-expanded") || aboutStoryStartY !== null) measureAboutStory();
+    measureAboutStory();
     if (aboutStoryStartY !== null) placeAboutStoryCopies();
     updateAboutStory();
     requestParallaxUpdate();
@@ -926,7 +879,7 @@
   document.fonts.ready.then(initHeadingReveal);
   document.fonts.ready.then(() => {
     initAboutStory();
-    if (!aboutIntro.classList.contains("is-expanded") || aboutStoryStartY !== null) measureAboutStory();
+    measureAboutStory();
     if (aboutStoryStartY !== null) placeAboutStoryCopies();
     updateAboutStory();
   });
