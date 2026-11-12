@@ -587,7 +587,8 @@
       window.addEventListener("resize", fitFooterWordmark, { passive: true });
       return;
     }
-    const targets = [...document.querySelectorAll("h1, h2, h3, .footer__brand > p")];
+    const targets = [...document.querySelectorAll("h1, h2, h3, .footer__brand > p")]
+      .filter((heading) => !heading.closest(".about__desktop-title"));
     const lineTargets = targets.map((heading) => heading.matches(".faq-item__question")
       ? heading
       : heading.querySelector(".faq-item__question") || heading);
@@ -675,49 +676,24 @@
 
   const aboutScene = document.querySelector(".about__desktop-scene");
   const aboutRunway = aboutScene?.querySelector(".about__desktop-runway");
-  const aboutIntro = aboutScene?.querySelector(".about__desktop-intro");
-  const aboutTitle = aboutScene?.querySelector(".about__desktop-title h2");
+  const aboutStage = aboutScene?.querySelector(".about__desktop-stage");
   const aboutPortrait = aboutScene?.querySelector(".about__desktop-portrait");
-  const aboutPortraitImage = aboutPortrait?.querySelector("img");
   const aboutStoryCopies = aboutScene ? [...aboutScene.querySelectorAll(".about__desktop-copy")] : [];
   let aboutStoryReady = false;
   let aboutStoryStartY = null;
-  let aboutIntroMarginTop = 0;
+  let aboutSceneStartY = 0;
   let aboutStoryTravel = [];
-  let aboutPinStartY = 0;
 
   const measureAboutStory = () => {
-    if (!aboutRunway || !aboutStoryCopies.length || !aboutIntro) return;
+    if (!aboutRunway || !aboutStoryCopies.length) return;
     aboutStoryTravel = aboutStoryCopies.map((copy) => window.innerHeight + copy.getBoundingClientRect().height);
     const tail = aboutStoryTravel.reduce((sum, distance) => sum + distance, 0);
-    if (aboutStoryStartY === null || !aboutIntro.classList.contains("is-expanded")) {
-      const wasExpanded = aboutIntro.classList.contains("is-expanded");
-      const previousTransition = aboutPortrait.style.transition;
-      if (wasExpanded) {
-        aboutPortrait.style.transition = "none";
-        aboutIntro.classList.remove("is-expanded");
-        void aboutPortrait.offsetWidth;
-      }
-      const compactHeight = aboutIntro.getBoundingClientRect().height;
-      if (wasExpanded) {
-        aboutIntro.classList.add("is-expanded");
-        void aboutPortrait.offsetWidth;
-        aboutPortrait.style.transition = previousTransition;
-      }
-      aboutIntroMarginTop = Math.max(0, (window.innerHeight - compactHeight) / 2);
-      aboutIntro.style.marginTop = `${aboutIntroMarginTop}px`;
-      aboutPinStartY = window.scrollY + aboutScene.getBoundingClientRect().top + aboutIntroMarginTop - window.innerHeight * 0.083;
-    }
     if (aboutStoryStartY === null) {
-      const expandedHeight = aboutIntro.getBoundingClientRect().height;
-      aboutRunway.style.height = `${aboutIntroMarginTop + window.innerHeight * 2 + tail + expandedHeight}px`;
+      aboutRunway.style.height = `${window.innerHeight * 3 + tail}px`;
       return;
     }
-    const sceneStartY = window.scrollY + aboutScene.getBoundingClientRect().top;
-    const expandedHeight = aboutIntro.getBoundingClientRect().height;
-    const stickyTop = window.innerHeight * 0.083;
-    const releaseScrollY = aboutStoryStartY + tail;
-    aboutRunway.style.height = `${Math.max(window.innerHeight, releaseScrollY - sceneStartY + stickyTop + expandedHeight)}px`;
+    const available = Math.max(0, aboutStoryStartY - aboutSceneStartY);
+    aboutRunway.style.height = `${window.innerHeight + available + tail}px`;
   };
 
   const initAboutStory = () => {
@@ -741,33 +717,28 @@
     if (!aboutStoryReady) initAboutStory();
     if (!aboutStoryReady) return;
 
-    const titleRect = aboutTitle.getBoundingClientRect();
-    const titleCenter = titleRect.top + titleRect.height / 2;
-    aboutScene.classList.toggle("is-color-active", titleCenter <= window.innerHeight / 2);
+    const sceneRect = aboutScene.getBoundingClientRect();
+    if (sceneRect.top > 0) {
+      aboutStage.classList.remove("is-expanded");
+      aboutStoryStartY = null;
+      aboutRunway.style.height = "100svh";
+      aboutStoryCopies.forEach((copy) => {
+        copy.style.transform = "translate3d(0, 100svh, 0)";
+        copy.querySelectorAll("span.is-highlighted").forEach((span) => span.classList.remove("is-highlighted"));
+        copy.dataset.highlightedCount = "0";
+      });
+      return;
+    }
 
-    const sceneStartY = window.scrollY + aboutScene.getBoundingClientRect().top;
-    const stickyTop = window.innerHeight * 0.083;
-    aboutPinStartY = sceneStartY + aboutIntroMarginTop - stickyTop;
-    const shouldExpand = window.scrollY >= aboutPinStartY;
-    if (shouldExpand && !aboutIntro.classList.contains("is-expanded")) {
-      aboutIntro.classList.add("is-expanded");
+    if (!aboutStage.classList.contains("is-expanded")) {
+      aboutSceneStartY = window.scrollY + sceneRect.top;
       aboutStoryStartY = null;
       measureAboutStory();
+      aboutStage.classList.add("is-expanded");
       if (reducedMotion.matches) {
         aboutStoryStartY = window.scrollY;
-        placeAboutStoryCopies();
         measureAboutStory();
       }
-    } else if (!shouldExpand && aboutIntro.classList.contains("is-expanded")) {
-      aboutIntro.classList.remove("is-expanded");
-      aboutStoryStartY = null;
-      aboutStoryCopies.forEach((copy) => {
-        copy.style.top = "-10000px";
-        copy.dataset.highlightedCount = "0";
-        copy.querySelectorAll("span.is-highlighted").forEach((span) => span.classList.remove("is-highlighted"));
-      });
-      aboutPortraitImage.style.setProperty("--about-image-shift", "0px");
-      measureAboutStory();
     }
     if (aboutStoryStartY === null) return;
 
@@ -776,7 +747,10 @@
     const fillDistance = Math.max(1, window.innerHeight - photoTop);
     aboutStoryCopies.forEach((copy, index) => {
       const distance = aboutStoryTravel[index] || window.innerHeight;
+      const localProgress = Math.min(1, Math.max(0, elapsed / distance));
       const fillProgress = Math.min(1, Math.max(0, elapsed / fillDistance));
+      const y = window.innerHeight - localProgress * distance;
+      copy.style.transform = `translate3d(0, ${y.toFixed(2)}px, 0)`;
       const spans = copy.children;
       const highlightedCount = Math.floor(fillProgress * spans.length);
       const previousCount = Number(copy.dataset.highlightedCount || 0);
@@ -792,28 +766,11 @@
       copy.dataset.highlightedCount = String(highlightedCount);
       elapsed = Math.max(0, elapsed - distance);
     });
-
-    const storyTravel = aboutStoryTravel.reduce((sum, distance) => sum + distance, 0);
-    const afterStoryDistance = window.scrollY - (aboutStoryStartY + storyTravel);
-    const availableImageTravel = Math.max(0, aboutPortraitImage.offsetHeight - aboutPortrait.clientHeight);
-    const parallaxShift = afterStoryDistance > 0 ? Math.min(availableImageTravel, afterStoryDistance * 0.2) : 0;
-    aboutPortraitImage.style.setProperty("--about-image-shift", `${parallaxShift.toFixed(2)}px`);
-  };
-
-  const placeAboutStoryCopies = () => {
-    if (aboutStoryStartY === null || !aboutScene || !aboutStoryCopies.length) return;
-    const sceneStartY = window.scrollY + aboutScene.getBoundingClientRect().top;
-    const firstCopyTop = aboutStoryStartY + window.innerHeight - sceneStartY;
-    aboutStoryCopies.forEach((copy, index) => {
-      const precedingDistance = aboutStoryTravel.slice(0, index).reduce((sum, distance) => sum + distance, 0);
-      copy.style.top = `${firstCopyTop + precedingDistance}px`;
-    });
   };
 
   aboutPortrait?.addEventListener("transitionend", (event) => {
-    if (event.propertyName !== "width" || !aboutIntro.classList.contains("is-expanded")) return;
+    if (event.propertyName !== "width" || !aboutStage.classList.contains("is-expanded")) return;
     aboutStoryStartY = window.scrollY;
-    placeAboutStoryCopies();
     measureAboutStory();
     updateAboutStory();
   });
@@ -916,7 +873,6 @@
     scrollingUp = false;
     syncScrollNav();
     measureAboutStory();
-    if (aboutStoryStartY !== null) placeAboutStoryCopies();
     updateAboutStory();
     requestParallaxUpdate();
   });
@@ -924,8 +880,6 @@
   document.fonts.ready.then(initHeadingReveal);
   document.fonts.ready.then(() => {
     initAboutStory();
-    measureAboutStory();
-    if (aboutStoryStartY !== null) placeAboutStoryCopies();
     updateAboutStory();
   });
   syncScrollNav();
