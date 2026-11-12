@@ -236,7 +236,10 @@
     if (!projectGallery.open) return;
     projectGallery.close();
     window.clearTimeout(gallerySettleTimer);
+    window.clearTimeout(galleryWheelTimer);
     gallerySettleTimer = 0;
+    galleryWheelTimer = 0;
+    galleryWheelLock = false;
     galleryActiveSlide = null;
     document.body.classList.remove("gallery-open");
     document.documentElement.classList.add("gallery-suppress-hover");
@@ -324,19 +327,21 @@
   projectGallery.addEventListener("wheel", (event) => {
     if (Math.abs(event.deltaX) > Math.abs(event.deltaY) || !event.deltaY) return;
     event.preventDefault();
-    if (galleryWheelLock) return;
 
-    const slides = [...galleryTrack.querySelectorAll(".project-gallery__slide")];
-    const currentSlide = findCenteredGallerySlide();
-    const currentIndex = slides.indexOf(currentSlide);
-    const targetSlide = slides[currentIndex + (event.deltaY > 0 ? 1 : -1)];
-    if (targetSlide) centerGallerySlide(targetSlide, "smooth");
+    if (!galleryWheelLock) {
+      const slides = [...galleryTrack.querySelectorAll(".project-gallery__slide")];
+      const currentSlide = findCenteredGallerySlide();
+      const currentIndex = slides.indexOf(currentSlide);
+      const targetSlide = slides[currentIndex + (event.deltaY > 0 ? 1 : -1)];
+      if (targetSlide) centerGallerySlide(targetSlide, "smooth");
+      galleryWheelLock = true;
+    }
 
-    galleryWheelLock = true;
+    window.clearTimeout(galleryWheelTimer);
     galleryWheelTimer = window.setTimeout(() => {
       galleryWheelLock = false;
       galleryWheelTimer = 0;
-    }, 360);
+    }, 700);
   }, { passive: false });
   window.addEventListener("resize", () => {
     if (!projectGallery.open || !galleryActiveSlide) return;
