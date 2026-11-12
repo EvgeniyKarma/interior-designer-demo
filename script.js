@@ -33,6 +33,8 @@
   let galleryActiveSlide = null;
   let galleryScrollFrame = 0;
   let gallerySettleTimer = 0;
+  let galleryWheelLock = false;
+  let galleryWheelTimer = 0;
   let galleryIsRecentering = false;
 
   const projectGalleryImages = new Map([
@@ -320,11 +322,21 @@
     centerGallerySlide(target, "smooth");
   });
   projectGallery.addEventListener("wheel", (event) => {
-    const delta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
-    if (!delta) return;
-    const multiplier = event.deltaMode === WheelEvent.DOM_DELTA_LINE ? 16 : event.deltaMode === WheelEvent.DOM_DELTA_PAGE ? window.innerHeight * 0.8 : 1;
-    galleryTrack.scrollLeft += delta * multiplier;
+    if (Math.abs(event.deltaX) > Math.abs(event.deltaY) || !event.deltaY) return;
     event.preventDefault();
+    if (galleryWheelLock) return;
+
+    const slides = [...galleryTrack.querySelectorAll(".project-gallery__slide")];
+    const currentSlide = findCenteredGallerySlide();
+    const currentIndex = slides.indexOf(currentSlide);
+    const targetSlide = slides[currentIndex + (event.deltaY > 0 ? 1 : -1)];
+    if (targetSlide) centerGallerySlide(targetSlide, "smooth");
+
+    galleryWheelLock = true;
+    galleryWheelTimer = window.setTimeout(() => {
+      galleryWheelLock = false;
+      galleryWheelTimer = 0;
+    }, 360);
   }, { passive: false });
   window.addEventListener("resize", () => {
     if (!projectGallery.open || !galleryActiveSlide) return;
