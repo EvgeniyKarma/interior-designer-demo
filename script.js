@@ -30,6 +30,10 @@
   const galleryClose = projectGallery.querySelector(".project-gallery__close");
   let galleryReturnFocus = null;
   let galleryOpenedByKeyboard = false;
+  let galleryActiveSlide = null;
+  let galleryScrollFrame = 0;
+  let gallerySettleTimer = 0;
+  let galleryIsRecentering = false;
 
   const projectGalleryImages = new Map([
     ["Квартира в природных тонах", [
@@ -146,9 +150,76 @@
   if (document.readyState === "complete") warmGalleryLeads();
   else window.addEventListener("load", warmGalleryLeads, { once: true });
 
+  const centerGallerySlide = (slide, behavior = "instant") => {
+    if (!slide) return;
+    const left = slide.offsetLeft + slide.offsetWidth / 2 - galleryTrack.clientWidth / 2;
+    galleryTrack.scrollTo({ left, behavior });
+  };
+
+  const findCenteredGallerySlide = () => {
+    const center = galleryTrack.scrollLeft + galleryTrack.clientWidth / 2;
+    let closest = null;
+    let closestDistance = Infinity;
+    galleryTrack.querySelectorAll(".project-gallery__slide").forEach((slide) => {
+      const slideCenter = slide.offsetLeft + slide.offsetWidth / 2;
+      const distance = Math.abs(slideCenter - center);
+      if (distance < closestDistance) {
+        closest = slide;
+        closestDistance = distance;
+      }
+    });
+    return closest;
+  };
+
+  const setActiveGallerySlide = (slide) => {
+    if (!slide || slide === galleryActiveSlide) return;
+    galleryActiveSlide?.classList.remove("is-active");
+    galleryActiveSlide = slide;
+    galleryActiveSlide.classList.add("is-active");
+    const photoNumber = Number(slide.dataset.photoIndex) + 1;
+    const photoCount = Number(galleryTrack.dataset.photoCount);
+    galleryTrack.setAttribute("aria-label", `Фотографии проекта, фото ${photoNumber} из ${photoCount}`);
+  };
+
+  const updateActiveGallerySlide = () => {
+    galleryScrollFrame = 0;
+    setActiveGallerySlide(findCenteredGallerySlide());
+  };
+
+  const recenterGalleryLoop = () => {
+    gallerySettleTimer = 0;
+    if (!projectGallery.open || !galleryActiveSlide) return;
+    setActiveGallerySlide(findCenteredGallerySlide());
+
+    const copyIndex = Number(galleryActiveSlide.dataset.copyIndex);
+    if (copyIndex === 1) return;
+
+    const photoIndex = Number(galleryActiveSlide.dataset.photoIndex);
+    const centralSlide = galleryTrack.querySelector(`.project-gallery__slide[data-copy-index="1"][data-photo-index="${photoIndex}"]`);
+    if (!centralSlide) return;
+
+    galleryIsRecentering = true;
+    setActiveGallerySlide(centralSlide);
+    centerGallerySlide(centralSlide);
+    window.requestAnimationFrame(() => {
+      galleryIsRecentering = false;
+      setActiveGallerySlide(findCenteredGallerySlide());
+    });
+  };
+
+  const handleGalleryScroll = () => {
+    if (galleryIsRecentering) return;
+    if (!galleryScrollFrame) galleryScrollFrame = window.requestAnimationFrame(updateActiveGallerySlide);
+    window.clearTimeout(gallerySettleTimer);
+    gallerySettleTimer = window.setTimeout(recenterGalleryLoop, 180);
+  };
+
   const closeProjectGallery = () => {
     if (!projectGallery.open) return;
     projectGallery.close();
+    window.clearTimeout(gallerySettleTimer);
+    gallerySettleTimer = 0;
+    galleryActiveSlide = null;
     document.body.classList.remove("gallery-open");
     document.documentElement.classList.add("gallery-suppress-hover");
     if (galleryReturnFocus?.isConnected) {
@@ -166,20 +237,46 @@
     galleryReturnFocus = trigger;
     galleryOpenedByKeyboard = !document.documentElement.classList.contains("is-pointer-input");
     galleryTitle.textContent = title;
-    galleryTrack.replaceChildren(...images.map((src, index) => {
-      const image = document.createElement("img");
-      image.src = src;
-      image.alt = `${title}, фотография ${index + 1} из ${images.length}`;
-      image.width = 560;
-      image.height = 700;
-      image.loading = "eager";
-      image.fetchPriority = index === 0 ? "high" : "low";
-      image.decoding = "async";
-      return image;
-    }));
+    galleryTrack.dataset.photoCount = images.length;
+    galleryTrack.setAttribute("aria-label", `Фотографии проекта, фото 1 из ${images.length}`);
+    const slides = [];
+    for (let copyIndex = 0; copyIndex < 3; copyIndex += 1) {
+      images.forEach((src, photoIndex) => {
+        const slide = document.createElement("div");
+        slide.className = "project-gallery__slide";
+        slide.dataset.copyIndex = copyIndex;
+        slide.dataset.photoIndex = photoIndex;
+        slide.setAttribute("role", "group");
+        slide.setAttribute("aria-roledescription", "слайд");
+        slide.setAttribute("aria-label", `Фото ${photoIndex + 1} из ${images.length}`);
+        slide.setAttribute("aria-hidden", String(copyIndex !== 1));
+
+        const mask = document.createElement("div");
+        mask.className = "project-gallery__mask";
+        const image = document.createElement("img");
+        image.src = src;
+        image.alt = `${title}, фотография ${photoIndex + 1} из ${images.length}`;
+        image.width = 560;
+        image.height = 700;
+        image.loading = copyIndex === 1 ? "eager" : "lazy";
+        image.fetchPriority = copyIndex === 1 && photoIndex === 0 ? "high" : "low";
+        image.decoding = "async";
+        mask.append(image);
+        slide.append(mask);
+        slides.push(slide);
+      });
+    }
+    galleryTrack.replaceChildren(...slides);
+    galleryActiveSlide = slides[images.length];
+    galleryActiveSlide.classList.add("is-active");
+    galleryIsRecentering = true;
     galleryTrack.scrollLeft = 0;
     projectGallery.showModal();
     document.body.classList.add("gallery-open");
+    window.requestAnimationFrame(() => {
+      centerGallerySlide(galleryActiveSlide);
+      window.requestAnimationFrame(() => { galleryIsRecentering = false; });
+    });
     galleryClose.focus({ preventScroll: true });
   };
 
@@ -196,6 +293,16 @@
     event.preventDefault();
     closeProjectGallery();
   });
+  galleryTrack.addEventListener("scroll", handleGalleryScroll, { passive: true });
+  galleryTrack.addEventListener("keydown", (event) => {
+    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+    const slides = [...galleryTrack.querySelectorAll(".project-gallery__slide")];
+    const activeIndex = slides.indexOf(galleryActiveSlide);
+    const target = slides[activeIndex + (event.key === "ArrowRight" ? 1 : -1)];
+    if (!target) return;
+    event.preventDefault();
+    centerGallerySlide(target, "smooth");
+  });
   galleryTrack.addEventListener("wheel", (event) => {
     if (window.matchMedia("(min-width: 1200px)").matches && Math.abs(event.deltaY) > Math.abs(event.deltaX)) {
       const multiplier = event.deltaMode === WheelEvent.DOM_DELTA_LINE ? 16 : event.deltaMode === WheelEvent.DOM_DELTA_PAGE ? window.innerHeight : 1;
@@ -203,6 +310,14 @@
       event.preventDefault();
     }
   }, { passive: false });
+  window.addEventListener("resize", () => {
+    if (!projectGallery.open || !galleryActiveSlide) return;
+    galleryIsRecentering = true;
+    window.requestAnimationFrame(() => {
+      centerGallerySlide(galleryActiveSlide);
+      window.requestAnimationFrame(() => { galleryIsRecentering = false; });
+    });
+  }, { passive: true });
 
   const fitFooterWordmark = () => {
     if (!footerWordmark) return;
