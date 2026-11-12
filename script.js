@@ -229,7 +229,7 @@
     if (galleryIsRecentering) return;
     if (!galleryScrollFrame) galleryScrollFrame = window.requestAnimationFrame(updateActiveGallerySlide);
     window.clearTimeout(gallerySettleTimer);
-    gallerySettleTimer = window.setTimeout(recenterGalleryLoop, 180);
+    gallerySettleTimer = window.setTimeout(recenterGalleryLoop, 500);
   };
 
   const closeProjectGallery = () => {
@@ -315,6 +315,11 @@
     closeProjectGallery();
   });
   galleryTrack.addEventListener("scroll", handleGalleryScroll, { passive: true });
+  galleryTrack.addEventListener("scrollend", () => {
+    if (galleryIsRecentering) return;
+    window.clearTimeout(gallerySettleTimer);
+    recenterGalleryLoop();
+  });
   galleryTrack.addEventListener("keydown", (event) => {
     if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
     const slides = [...galleryTrack.querySelectorAll(".project-gallery__slide")];
