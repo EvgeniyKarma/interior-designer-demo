@@ -334,6 +334,11 @@ h3 { font-size: 2rem; line-height: 1.2; }
 .work-card__caption p { flex-shrink: 0; text-align: right; }
 
 .project-gallery {
+  --gallery-center-width: min(35rem, calc(80dvh - 5.6rem));
+  --gallery-center-height: min(43.75rem, calc(100dvh - 7rem));
+  --gallery-side-width: min(24.5rem, calc(56dvh - 3.92rem));
+  --gallery-side-height: min(30.625rem, calc(70dvh - 4.9rem));
+  --gallery-slot-width: min(34.125rem, calc(68dvh - .385rem));
   position: fixed;
   inset: 0;
   width: 100%;
@@ -344,21 +349,20 @@ h3 { font-size: 2rem; line-height: 1.2; }
   border: 0;
   padding: 0;
   overflow: hidden;
-  background: transparent;
-  color: var(--white);
+  background: var(--white);
+  color: var(--black);
 }
-.project-gallery::backdrop { background: rgb(6 6 2 / 80%); }
+.project-gallery::backdrop { background: var(--white); }
 .project-gallery__header {
   position: absolute;
   z-index: 1;
   inset: 0 0 auto;
   display: flex;
-  min-height: 4.9375rem;
   align-items: center;
   justify-content: space-between;
   gap: 2rem;
   padding: 1.5rem var(--gutter);
-  font-size: 1rem;
+  font-size: 1.375rem;
   line-height: 1.4;
 }
 .project-gallery__title {
@@ -380,7 +384,7 @@ h3 { font-size: 2rem; line-height: 1.2; }
   font: inherit;
   cursor: pointer;
 }
-.project-gallery__close img { width: 1.5rem; height: 1.5rem; filter: invert(1); }
+.project-gallery__close img { width: 1.5rem; height: 1.5rem; }
 .project-gallery__close:focus-visible,
 .project-gallery__track:focus-visible { outline: 2px solid currentColor; outline-offset: 4px; }
 .project-gallery__track {
@@ -388,22 +392,51 @@ h3 { font-size: 2rem; line-height: 1.2; }
   inset: 50% 0 auto;
   display: flex;
   width: 100%;
-  gap: .75rem;
+  height: var(--gallery-center-height);
+  gap: 0;
   overflow-x: auto;
   overflow-y: hidden;
-  padding-inline: var(--gutter);
+  padding: 0;
   transform: translateY(-50%);
   overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: 50%;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
 }
 .project-gallery__track::-webkit-scrollbar { display: none; }
-.project-gallery__track img {
+.project-gallery__slide {
+  position: relative;
   display: block;
   flex: 0 0 auto;
-  width: 35rem;
-  height: min(43.75rem, calc(100dvh - 7rem));
+  width: var(--gallery-slot-width);
+  height: var(--gallery-center-height);
+  scroll-snap-align: center;
+  scroll-snap-stop: always;
+}
+.project-gallery__mask {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: var(--gallery-side-width);
+  height: var(--gallery-side-height);
+  overflow: hidden;
+  transform: translate(-50%, -50%);
+  transition: width 300ms ease-in-out, height 300ms ease-in-out;
+}
+.project-gallery__slide.is-active .project-gallery__mask {
+  width: var(--gallery-center-width);
+  height: var(--gallery-center-height);
+}
+.project-gallery__mask img {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: var(--gallery-center-width);
+  height: var(--gallery-center-height);
+  max-width: none;
   object-fit: cover;
+  transform: translate(-50%, -50%);
 }
 
 @media (hover: hover) and (prefers-reduced-motion: no-preference) {
@@ -734,11 +767,11 @@ h3 { font-size: 2rem; line-height: 1.2; }
   .work-card__caption { flex-direction: column; align-items: flex-start; gap: 0; margin-top: 12px; font-size: 18px; }
   .work-card__caption h3,.work-card__caption p { font-size: 18px; }
   .work-card__caption p { max-width: 100%; text-align: left; }
-  .project-gallery__header { min-height: 3.0625rem; align-items: flex-start; padding: .75rem var(--gutter); font-size: 1.125rem; }
-  .project-gallery__title { min-width: 0; flex: 1 1 auto; overflow: visible; text-overflow: clip; white-space: normal; }
+  .project-gallery { --gallery-center-width: min(20rem, calc(80dvh - 4rem)); --gallery-center-height: min(25rem, calc(100dvh - 5rem)); --gallery-side-width: min(14rem, calc(56dvh - 2.8rem)); --gallery-side-height: min(17.5rem, calc(70dvh - 3.5rem)); --gallery-slot-width: min(18.875rem, calc(68dvh - 1.525rem)); }
+  .project-gallery__header { align-items: center; gap: .5rem; padding: .75rem var(--gutter); font-size: 1.125rem; }
+  .project-gallery__title { min-width: 0; flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .project-gallery__close { gap: .5rem; }
   .project-gallery__close img { width: 1.25rem; height: 1.25rem; }
-  .project-gallery__track img { width: 20rem; height: min(25rem, calc(100dvh - 5rem)); }
   .about__content { gap: 40px; }
   .about__main { gap: 24px; }
   .about__portrait { height: 520px; aspect-ratio: auto; }
