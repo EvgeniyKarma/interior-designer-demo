@@ -32,11 +32,14 @@
   let galleryReturnFocus = null;
   let galleryOpenedByKeyboard = false;
   let galleryActiveSlide = null;
+  let galleryNavigationSlide = null;
+  let galleryAnimationFrame = 0;
   let galleryScrollFrame = 0;
   let gallerySettleTimer = 0;
   let galleryWheelLock = false;
   let galleryWheelTimer = 0;
   let galleryIsRecentering = false;
+  let galleryIsAnimating = false;
 
   const projectGalleryImages = new Map([
     ["Квартира в природных тонах", [
@@ -159,6 +162,98 @@
     galleryTrack.scrollTo({ left, behavior });
   };
 
+  const isDesktopGallery = () => window.matchMedia("(min-width: 1200px)").matches;
+
+  const getGallerySlotMetrics = () => {
+    const centerImage = galleryActiveSlide?.querySelector(".project-gallery__mask img");
+    const centerWidth = centerImage?.offsetWidth || 0;
+    const gap = Number.parseFloat(getComputedStyle(document.documentElement).fontSize) * 4.375;
+    return { center: centerWidth + gap, side: centerWidth * 0.7 + gap };
+  };
+
+  const getGalleryTargetScrollLeft = (target) => {
+    const slides = [...galleryTrack.querySelectorAll(".project-gallery__slide")];
+    const targetIndex = slides.indexOf(target);
+    if (targetIndex < 0) return galleryTrack.scrollLeft;
+    const { center, side } = getGallerySlotMetrics();
+    let targetCenter = center / 2;
+    for (let index = 0; index < targetIndex; index += 1) {
+      targetCenter += slides[index] === galleryActiveSlide ? center : side;
+    }
+    return targetCenter - galleryTrack.clientWidth / 2;
+  };
+
+  const easeGalleryProgress = (progress) => {
+    const coordinate = (time, first, second) => 3 * (1 - time) ** 2 * time * first + 3 * (1 - time) * time ** 2 * second + time ** 3;
+    let low = 0;
+    let high = 1;
+    let time = progress;
+    for (let iteration = 0; iteration < 10; iteration += 1) {
+      if (coordinate(time, 0.42, 0.58) < progress) low = time;
+      else high = time;
+      time = (low + high) / 2;
+    }
+    return coordinate(time, 0, 1);
+  };
+
+  const finishGalleryButtonTransition = (target) => {
+    const photoIndex = Number(target.dataset.photoIndex);
+    const centralSlide = Number(target.dataset.copyIndex) === 1
+      ? target
+      : galleryTrack.querySelector(`.project-gallery__slide[data-copy-index="1"][data-photo-index="${photoIndex}"]`);
+    galleryIsAnimating = false;
+    galleryNavigationSlide = centralSlide || target;
+    if (centralSlide && centralSlide !== target) {
+      galleryIsRecentering = true;
+      galleryTrack.classList.add("is-recentering");
+      setActiveGallerySlide(centralSlide);
+      centerGallerySlide(centralSlide);
+      window.requestAnimationFrame(() => {
+        galleryTrack.classList.remove("is-recentering");
+        galleryIsRecentering = false;
+        updateGalleryParallax();
+      });
+      return;
+    }
+    updateGalleryParallax();
+  };
+
+  const animateToGallerySlide = (target) => {
+    if (!target) return;
+    if (galleryAnimationFrame) window.cancelAnimationFrame(galleryAnimationFrame);
+    window.clearTimeout(gallerySettleTimer);
+    gallerySettleTimer = 0;
+    galleryIsRecentering = false;
+    galleryIsAnimating = true;
+
+    const startScrollLeft = galleryTrack.scrollLeft;
+    galleryNavigationSlide = target;
+    const duration = reducedMotion.matches ? 0 : 500;
+    let startedAt = null;
+    let endScrollLeft = startScrollLeft;
+
+    const step = (now) => {
+      if (startedAt === null) {
+        setActiveGallerySlide(target);
+        endScrollLeft = getGalleryTargetScrollLeft(target);
+        startedAt = now;
+      }
+      const progress = duration === 0 ? 1 : Math.min(1, (now - startedAt) / duration);
+      const eased = easeGalleryProgress(progress);
+      galleryTrack.scrollLeft = startScrollLeft + (endScrollLeft - startScrollLeft) * eased;
+      updateGalleryParallax();
+      if (progress < 1) {
+        galleryAnimationFrame = window.requestAnimationFrame(step);
+        return;
+      }
+      galleryAnimationFrame = 0;
+      galleryTrack.scrollLeft = endScrollLeft;
+      finishGalleryButtonTransition(target);
+    };
+
+    galleryAnimationFrame = window.requestAnimationFrame(step);
+  };
+
   const updateGalleryParallax = () => {
     if (reducedMotion.matches) return;
     const trackCenter = galleryTrack.scrollLeft + galleryTrack.clientWidth / 2;
@@ -217,6 +312,7 @@
 
     galleryIsRecentering = true;
     setActiveGallerySlide(centralSlide);
+    galleryNavigationSlide = centralSlide;
     window.requestAnimationFrame(() => {
       centerGallerySlide(centralSlide);
       updateGalleryParallax();
@@ -225,7 +321,7 @@
   };
 
   const handleGalleryScroll = () => {
-    if (galleryIsRecentering) return;
+    if (isDesktopGallery() || galleryIsRecentering || galleryIsAnimating) return;
     if (!galleryScrollFrame) galleryScrollFrame = window.requestAnimationFrame(updateActiveGallerySlide);
     window.clearTimeout(gallerySettleTimer);
     gallerySettleTimer = window.setTimeout(recenterGalleryLoop, 500);
@@ -239,7 +335,11 @@
     gallerySettleTimer = 0;
     galleryWheelTimer = 0;
     galleryWheelLock = false;
+    if (galleryAnimationFrame) window.cancelAnimationFrame(galleryAnimationFrame);
+    galleryAnimationFrame = 0;
+    galleryIsAnimating = false;
     galleryActiveSlide = null;
+    galleryNavigationSlide = null;
     document.body.classList.remove("gallery-open");
     document.documentElement.classList.add("gallery-suppress-hover");
     if (galleryReturnFocus?.isConnected) {
@@ -288,7 +388,9 @@
     }
     galleryTrack.replaceChildren(...slides);
     galleryActiveSlide = slides[images.length];
+    galleryNavigationSlide = galleryActiveSlide;
     galleryActiveSlide.classList.add("is-active");
+    galleryTrack.tabIndex = isDesktopGallery() ? -1 : 0;
     galleryIsRecentering = true;
     galleryTrack.scrollLeft = 0;
     projectGallery.showModal();
@@ -309,12 +411,18 @@
   galleryButtons.forEach((button) => {
     button.addEventListener("click", () => {
       const slides = [...galleryTrack.querySelectorAll(".project-gallery__slide")];
-      const currentSlide = findCenteredGallerySlide();
+      const currentSlide = isDesktopGallery()
+        ? galleryNavigationSlide || galleryActiveSlide
+        : findCenteredGallerySlide();
       const currentIndex = slides.indexOf(currentSlide);
       const direction = Number(button.dataset.galleryDirection);
       const target = slides[currentIndex + direction];
-      if (target) centerGallerySlide(target, "smooth");
-      galleryTrack.focus({ preventScroll: true });
+      if (!target) return;
+      if (isDesktopGallery()) animateToGallerySlide(target);
+      else {
+        centerGallerySlide(target, "smooth");
+        galleryTrack.focus({ preventScroll: true });
+      }
     });
   });
   projectGallery.addEventListener("click", (event) => {
@@ -326,11 +434,12 @@
   });
   galleryTrack.addEventListener("scroll", handleGalleryScroll, { passive: true });
   galleryTrack.addEventListener("scrollend", () => {
-    if (galleryIsRecentering) return;
+    if (isDesktopGallery() || galleryIsAnimating || galleryIsRecentering) return;
     window.clearTimeout(gallerySettleTimer);
     recenterGalleryLoop();
   });
   galleryTrack.addEventListener("keydown", (event) => {
+    if (isDesktopGallery()) return;
     if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
     const slides = [...galleryTrack.querySelectorAll(".project-gallery__slide")];
     const activeIndex = slides.indexOf(findCenteredGallerySlide());
@@ -340,6 +449,10 @@
     centerGallerySlide(target, "smooth");
   });
   projectGallery.addEventListener("wheel", (event) => {
+    if (isDesktopGallery()) {
+      event.preventDefault();
+      return;
+    }
     if (Math.abs(event.deltaX) > Math.abs(event.deltaY) || !event.deltaY) return;
     event.preventDefault();
 
@@ -360,9 +473,14 @@
   }, { passive: false });
   window.addEventListener("resize", () => {
     if (!projectGallery.open || !galleryActiveSlide) return;
+    if (galleryAnimationFrame) window.cancelAnimationFrame(galleryAnimationFrame);
+    galleryAnimationFrame = 0;
+    galleryIsAnimating = false;
+    galleryTrack.tabIndex = isDesktopGallery() ? -1 : 0;
+    galleryNavigationSlide = galleryActiveSlide;
     galleryIsRecentering = true;
     window.requestAnimationFrame(() => {
-      centerGallerySlide(galleryActiveSlide);
+      centerGallerySlide(galleryNavigationSlide || galleryActiveSlide);
       window.requestAnimationFrame(() => { galleryIsRecentering = false; });
     });
   }, { passive: true });
