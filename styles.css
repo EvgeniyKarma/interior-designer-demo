@@ -436,7 +436,7 @@ h3 { font-size: 2rem; line-height: 1.2; }
   height: var(--gallery-center-height);
   max-width: none;
   object-fit: cover;
-  transform: translate(-50%, -50%);
+  transform: translate(calc(-50% + var(--gallery-parallax-x, 0px)), -50%);
 }
 
 @media (hover: hover) and (prefers-reduced-motion: no-preference) {
