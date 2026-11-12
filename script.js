@@ -743,13 +743,16 @@
     if (aboutStoryStartY === null) return;
 
     let elapsed = Math.max(0, window.scrollY - aboutStoryStartY);
+    const photoTop = aboutPortrait.getBoundingClientRect().top;
+    const fillDistance = Math.max(1, window.innerHeight - photoTop);
     aboutStoryCopies.forEach((copy, index) => {
       const distance = aboutStoryTravel[index] || window.innerHeight;
       const localProgress = Math.min(1, Math.max(0, elapsed / distance));
+      const fillProgress = Math.min(1, Math.max(0, elapsed / fillDistance));
       const y = window.innerHeight - localProgress * distance;
       copy.style.transform = `translate3d(0, ${y.toFixed(2)}px, 0)`;
       const spans = copy.children;
-      const highlightedCount = Math.floor(localProgress * spans.length);
+      const highlightedCount = Math.floor(fillProgress * spans.length);
       const previousCount = Number(copy.dataset.highlightedCount || 0);
       if (highlightedCount > previousCount) {
         for (let characterIndex = previousCount; characterIndex < highlightedCount; characterIndex += 1) {
