@@ -587,7 +587,8 @@
       window.addEventListener("resize", fitFooterWordmark, { passive: true });
       return;
     }
-    const targets = [...document.querySelectorAll("h1, h2, h3, .footer__brand > p")];
+    const targets = [...document.querySelectorAll("h1, h2, h3, .footer__brand > p")]
+      .filter((heading) => !heading.closest(".about__desktop-title"));
     const lineTargets = targets.map((heading) => heading.matches(".faq-item__question")
       ? heading
       : heading.querySelector(".faq-item__question") || heading);
@@ -673,6 +674,104 @@
     });
   };
 
+  const aboutScene = document.querySelector(".about__desktop-scene");
+  const aboutRunway = aboutScene?.querySelector(".about__desktop-runway");
+  const aboutStage = aboutScene?.querySelector(".about__desktop-stage");
+  const aboutPortrait = aboutScene?.querySelector(".about__desktop-portrait");
+  const aboutStoryCopies = aboutScene ? [...aboutScene.querySelectorAll(".about__desktop-copy")] : [];
+  let aboutStoryReady = false;
+  let aboutStoryStartY = null;
+  let aboutSceneStartY = 0;
+  let aboutStoryTravel = [];
+
+  const measureAboutStory = () => {
+    if (!aboutRunway || !aboutStoryCopies.length) return;
+    aboutStoryTravel = aboutStoryCopies.map((copy) => window.innerHeight + copy.getBoundingClientRect().height);
+    const tail = aboutStoryTravel.reduce((sum, distance) => sum + distance, 0);
+    if (aboutStoryStartY === null) {
+      aboutRunway.style.height = `${window.innerHeight * 3 + tail}px`;
+      return;
+    }
+    const available = Math.max(0, aboutStoryStartY - aboutSceneStartY);
+    aboutRunway.style.height = `${window.innerHeight + available + tail}px`;
+  };
+
+  const initAboutStory = () => {
+    if (!aboutScene || aboutStoryReady || !window.matchMedia("(min-width: 1200px)").matches) return;
+    const segmenter = typeof Intl.Segmenter === "function" ? new Intl.Segmenter("ru", { granularity: "grapheme" }) : null;
+    aboutStoryCopies.forEach((copy) => {
+      const text = copy.textContent;
+      const characters = segmenter ? [...segmenter.segment(text)].map((part) => part.segment) : Array.from(text);
+      copy.replaceChildren(...characters.map((character) => {
+        const span = document.createElement("span");
+        span.textContent = character;
+        return span;
+      }));
+    });
+    aboutStoryReady = true;
+    measureAboutStory();
+  };
+
+  const updateAboutStory = () => {
+    if (!aboutScene || !window.matchMedia("(min-width: 1200px)").matches) return;
+    if (!aboutStoryReady) initAboutStory();
+    if (!aboutStoryReady) return;
+
+    const sceneRect = aboutScene.getBoundingClientRect();
+    if (sceneRect.top > 0) {
+      aboutStage.classList.remove("is-expanded");
+      aboutStoryStartY = null;
+      aboutRunway.style.height = "100svh";
+      aboutStoryCopies.forEach((copy) => {
+        copy.style.transform = "translate3d(0, 100svh, 0)";
+        copy.querySelectorAll("span.is-highlighted").forEach((span) => span.classList.remove("is-highlighted"));
+        copy.dataset.highlightedCount = "0";
+      });
+      return;
+    }
+
+    if (!aboutStage.classList.contains("is-expanded")) {
+      aboutSceneStartY = window.scrollY + sceneRect.top;
+      aboutStoryStartY = null;
+      measureAboutStory();
+      aboutStage.classList.add("is-expanded");
+      if (reducedMotion.matches) {
+        aboutStoryStartY = window.scrollY;
+        measureAboutStory();
+      }
+    }
+    if (aboutStoryStartY === null) return;
+
+    let elapsed = Math.max(0, window.scrollY - aboutStoryStartY);
+    aboutStoryCopies.forEach((copy, index) => {
+      const distance = aboutStoryTravel[index] || window.innerHeight;
+      const localProgress = Math.min(1, Math.max(0, elapsed / distance));
+      const y = window.innerHeight - localProgress * distance;
+      copy.style.transform = `translate3d(0, ${y.toFixed(2)}px, 0)`;
+      const spans = copy.children;
+      const highlightedCount = Math.floor(localProgress * spans.length);
+      const previousCount = Number(copy.dataset.highlightedCount || 0);
+      if (highlightedCount > previousCount) {
+        for (let characterIndex = previousCount; characterIndex < highlightedCount; characterIndex += 1) {
+          spans[characterIndex].classList.add("is-highlighted");
+        }
+      } else if (highlightedCount < previousCount) {
+        for (let characterIndex = highlightedCount; characterIndex < previousCount; characterIndex += 1) {
+          spans[characterIndex].classList.remove("is-highlighted");
+        }
+      }
+      copy.dataset.highlightedCount = String(highlightedCount);
+      elapsed = Math.max(0, elapsed - distance);
+    });
+  };
+
+  aboutPortrait?.addEventListener("transitionend", (event) => {
+    if (event.propertyName !== "width" || !aboutStage.classList.contains("is-expanded")) return;
+    aboutStoryStartY = window.scrollY;
+    measureAboutStory();
+    updateAboutStory();
+  });
+
   const requestParallaxUpdate = () => {
     if (!parallaxFrame) parallaxFrame = window.requestAnimationFrame(updateParallax);
   };
@@ -682,6 +781,7 @@
     scrollingUp = currentScrollY < previousScrollY;
     previousScrollY = currentScrollY;
     syncScrollNav();
+    updateAboutStory();
     requestParallaxUpdate();
   };
 
@@ -769,10 +869,16 @@
     previousScrollY = window.scrollY;
     scrollingUp = false;
     syncScrollNav();
+    measureAboutStory();
+    updateAboutStory();
     requestParallaxUpdate();
   });
   reducedMotion.addEventListener?.("change", requestParallaxUpdate);
   document.fonts.ready.then(initHeadingReveal);
+  document.fonts.ready.then(() => {
+    initAboutStory();
+    updateAboutStory();
+  });
   syncScrollNav();
   updateParallax();
 })();
