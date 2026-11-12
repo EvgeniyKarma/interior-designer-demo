@@ -40,6 +40,13 @@
   let galleryWheelTimer = 0;
   let galleryIsRecentering = false;
   let galleryIsAnimating = false;
+  let galleryIsDragging = false;
+  let galleryPointerId = null;
+  let galleryPointerStartX = 0;
+  let galleryPointerStartY = 0;
+  let galleryPointerStartScrollLeft = 0;
+  let galleryPointerDeltaX = 0;
+  let galleryPointerMoved = false;
 
   const projectGalleryImages = new Map([
     ["Квартира в природных тонах", [
@@ -208,10 +215,10 @@
       galleryTrack.classList.add("is-recentering");
       setActiveGallerySlide(centralSlide);
       centerGallerySlide(centralSlide);
+      updateGalleryParallax();
       window.requestAnimationFrame(() => {
         galleryTrack.classList.remove("is-recentering");
         galleryIsRecentering = false;
-        updateGalleryParallax();
       });
       return;
     }
@@ -321,7 +328,7 @@
   };
 
   const handleGalleryScroll = () => {
-    if (isDesktopGallery() || galleryIsRecentering || galleryIsAnimating) return;
+    if (isDesktopGallery() || galleryIsRecentering || galleryIsAnimating || galleryIsDragging) return;
     if (!galleryScrollFrame) galleryScrollFrame = window.requestAnimationFrame(updateActiveGallerySlide);
     window.clearTimeout(gallerySettleTimer);
     gallerySettleTimer = window.setTimeout(recenterGalleryLoop, 500);
@@ -335,6 +342,8 @@
     gallerySettleTimer = 0;
     galleryWheelTimer = 0;
     galleryWheelLock = false;
+    galleryIsDragging = false;
+    galleryPointerId = null;
     if (galleryAnimationFrame) window.cancelAnimationFrame(galleryAnimationFrame);
     galleryAnimationFrame = 0;
     galleryIsAnimating = false;
@@ -418,13 +427,65 @@
       const direction = Number(button.dataset.galleryDirection);
       const target = slides[currentIndex + direction];
       if (!target) return;
-      if (isDesktopGallery()) animateToGallerySlide(target);
-      else {
-        centerGallerySlide(target, "smooth");
-        galleryTrack.focus({ preventScroll: true });
-      }
+      animateToGallerySlide(target);
     });
   });
+  galleryTrack.addEventListener("pointerdown", (event) => {
+    if (isDesktopGallery() || galleryIsAnimating || galleryPointerId !== null || !event.isPrimary || event.button > 0) return;
+    galleryPointerId = event.pointerId;
+    galleryPointerStartX = event.clientX;
+    galleryPointerStartY = event.clientY;
+    galleryPointerStartScrollLeft = galleryTrack.scrollLeft;
+    galleryPointerDeltaX = 0;
+    galleryPointerMoved = false;
+    galleryIsDragging = true;
+    galleryTrack.setPointerCapture(event.pointerId);
+  });
+  galleryTrack.addEventListener("pointermove", (event) => {
+    if (event.pointerId !== galleryPointerId) return;
+    const deltaX = event.clientX - galleryPointerStartX;
+    const deltaY = event.clientY - galleryPointerStartY;
+    if (!galleryPointerMoved && Math.max(Math.abs(deltaX), Math.abs(deltaY)) < 8) return;
+    if (!galleryPointerMoved && Math.abs(deltaY) > Math.abs(deltaX)) {
+      galleryIsDragging = false;
+      galleryPointerId = null;
+      if (galleryTrack.hasPointerCapture(event.pointerId)) galleryTrack.releasePointerCapture(event.pointerId);
+      return;
+    }
+    galleryPointerMoved = true;
+    event.preventDefault();
+
+    const slides = [...galleryTrack.querySelectorAll(".project-gallery__slide")];
+    const currentSlide = galleryNavigationSlide || galleryActiveSlide;
+    const currentIndex = slides.indexOf(currentSlide);
+    const neighbor = slides[currentIndex + (deltaX < 0 ? 1 : -1)];
+    if (!currentSlide || !neighbor) return;
+    const currentCenter = currentSlide.offsetLeft + currentSlide.offsetWidth / 2;
+    const neighborCenter = neighbor.offsetLeft + neighbor.offsetWidth / 2;
+    const maxDistance = Math.abs(neighborCenter - currentCenter);
+    const movement = Math.max(-maxDistance, Math.min(maxDistance, -deltaX));
+    galleryTrack.scrollLeft = galleryPointerStartScrollLeft + movement;
+    galleryPointerDeltaX = deltaX;
+    updateGalleryParallax();
+  });
+  const finishGalleryPointerGesture = (event, cancelled = false) => {
+    if (event.pointerId !== galleryPointerId) return;
+    const moved = galleryPointerMoved;
+    const deltaX = galleryPointerDeltaX;
+    galleryPointerId = null;
+    galleryIsDragging = false;
+    galleryPointerMoved = false;
+    galleryPointerDeltaX = 0;
+    if (!moved) return;
+
+    const slides = [...galleryTrack.querySelectorAll(".project-gallery__slide")];
+    const currentSlide = galleryNavigationSlide || galleryActiveSlide;
+    const currentIndex = slides.indexOf(currentSlide);
+    const direction = cancelled || Math.abs(deltaX) < 32 ? 0 : deltaX < 0 ? 1 : -1;
+    animateToGallerySlide(slides[currentIndex + direction] || currentSlide);
+  };
+  galleryTrack.addEventListener("pointerup", (event) => finishGalleryPointerGesture(event));
+  galleryTrack.addEventListener("pointercancel", (event) => finishGalleryPointerGesture(event, true));
   projectGallery.addEventListener("click", (event) => {
     if (event.target === projectGallery) closeProjectGallery();
   });
@@ -446,7 +507,7 @@
     const target = slides[activeIndex + (event.key === "ArrowRight" ? 1 : -1)];
     if (!target) return;
     event.preventDefault();
-    centerGallerySlide(target, "smooth");
+    animateToGallerySlide(target);
   });
   projectGallery.addEventListener("wheel", (event) => {
     if (isDesktopGallery()) {
@@ -461,7 +522,7 @@
       const currentSlide = findCenteredGallerySlide();
       const currentIndex = slides.indexOf(currentSlide);
       const targetSlide = slides[currentIndex + (event.deltaY > 0 ? 1 : -1)];
-      if (targetSlide) centerGallerySlide(targetSlide, "smooth");
+      if (targetSlide) animateToGallerySlide(targetSlide);
       galleryWheelLock = true;
     }
 
