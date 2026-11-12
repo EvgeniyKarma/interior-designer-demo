@@ -156,6 +156,21 @@
     galleryTrack.scrollTo({ left, behavior });
   };
 
+  const updateGalleryParallax = () => {
+    if (reducedMotion.matches) return;
+    const trackCenter = galleryTrack.scrollLeft + galleryTrack.clientWidth / 2;
+    galleryTrack.querySelectorAll(".project-gallery__slide").forEach((slide) => {
+      const mask = slide.querySelector(".project-gallery__mask");
+      const image = mask?.querySelector("img");
+      if (!mask || !image) return;
+      const slideCenter = slide.offsetLeft + slide.offsetWidth / 2;
+      const availableShift = Math.max(0, (image.offsetWidth - mask.clientWidth) / 2);
+      const delayedShift = (trackCenter - slideCenter) * 0.2;
+      const shift = Math.max(-availableShift, Math.min(availableShift, delayedShift));
+      image.style.setProperty("--gallery-parallax-x", `${shift}px`);
+    });
+  };
+
   const findCenteredGallerySlide = () => {
     const center = galleryTrack.scrollLeft + galleryTrack.clientWidth / 2;
     let closest = null;
@@ -184,6 +199,7 @@
   const updateActiveGallerySlide = () => {
     galleryScrollFrame = 0;
     setActiveGallerySlide(findCenteredGallerySlide());
+    updateGalleryParallax();
   };
 
   const recenterGalleryLoop = () => {
@@ -303,12 +319,12 @@
     event.preventDefault();
     centerGallerySlide(target, "smooth");
   });
-  galleryTrack.addEventListener("wheel", (event) => {
-    if (window.matchMedia("(min-width: 1200px)").matches && Math.abs(event.deltaY) > Math.abs(event.deltaX)) {
-      const multiplier = event.deltaMode === WheelEvent.DOM_DELTA_LINE ? 16 : event.deltaMode === WheelEvent.DOM_DELTA_PAGE ? window.innerHeight : 1;
-      galleryTrack.scrollLeft += event.deltaY * multiplier;
-      event.preventDefault();
-    }
+  projectGallery.addEventListener("wheel", (event) => {
+    const delta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
+    if (!delta) return;
+    const multiplier = event.deltaMode === WheelEvent.DOM_DELTA_LINE ? 16 : event.deltaMode === WheelEvent.DOM_DELTA_PAGE ? window.innerHeight * 0.8 : 1;
+    galleryTrack.scrollLeft += delta * multiplier;
+    event.preventDefault();
   }, { passive: false });
   window.addEventListener("resize", () => {
     if (!projectGallery.open || !galleryActiveSlide) return;
