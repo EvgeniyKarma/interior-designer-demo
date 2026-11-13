@@ -674,103 +674,46 @@
   };
 
   const aboutScene = document.querySelector(".about__desktop-scene");
-  const aboutRunway = aboutScene?.querySelector(".about__desktop-runway");
-  const aboutIntro = aboutScene?.querySelector(".about__desktop-intro");
-  const aboutPortrait = aboutScene?.querySelector(".about__desktop-portrait");
+  const aboutLayout = aboutScene?.querySelector(".about__desktop-layout");
+  const aboutTrigger = aboutScene?.querySelector(".about__desktop-trigger");
   const aboutStoryCopies = aboutScene ? [...aboutScene.querySelectorAll(".about__desktop-copy")] : [];
-  let aboutStoryReady = false;
-  let aboutStoryStartY = null;
-  let aboutStoryTravel = [];
-  let aboutPinStartY = 0;
-
-  const measureAboutStory = () => {
-    if (!aboutRunway || !aboutStoryCopies.length || !aboutIntro) return;
-    aboutStoryTravel = aboutStoryCopies.map((copy) => window.innerHeight + copy.getBoundingClientRect().height);
-    const tail = aboutStoryTravel.reduce((sum, distance) => sum + distance, 0);
-    if (aboutStoryStartY === null) {
-      const expandedHeight = aboutIntro.getBoundingClientRect().height;
-      aboutRunway.style.height = `${window.innerHeight * 2 + tail + expandedHeight}px`;
-      return;
-    }
-    const sceneStartY = window.scrollY + aboutScene.getBoundingClientRect().top;
-    const expandedHeight = aboutIntro.getBoundingClientRect().height;
-    const stickyTop = Number.parseFloat(getComputedStyle(aboutIntro).top) || 0;
-    const releaseScrollY = aboutStoryStartY + tail;
-    aboutRunway.style.height = `${Math.max(window.innerHeight, releaseScrollY - sceneStartY + stickyTop + expandedHeight)}px`;
-  };
+  let aboutStoryPrepared = false;
+  let aboutRevealObserver = null;
 
   const initAboutStory = () => {
-    if (!aboutScene || aboutStoryReady || !window.matchMedia("(min-width: 1200px)").matches) return;
+    if (!aboutLayout || !aboutTrigger || !aboutStoryCopies.length || aboutStoryPrepared || !window.matchMedia("(min-width: 1200px)").matches) return;
     const segmenter = typeof Intl.Segmenter === "function" ? new Intl.Segmenter("ru", { granularity: "grapheme" }) : null;
     aboutStoryCopies.forEach((copy) => {
       const text = copy.textContent;
       const characters = segmenter ? [...segmenter.segment(text)].map((part) => part.segment) : Array.from(text);
-      copy.replaceChildren(...characters.map((character) => {
+      copy.replaceChildren(...characters.map((character, index) => {
         const span = document.createElement("span");
         span.textContent = character;
+        const progress = characters.length > 1 ? index / (characters.length - 1) : 0;
+        span.style.setProperty("--about-char-delay", `${Math.round(progress * 900)}ms`);
         return span;
       }));
     });
-    aboutStoryReady = true;
-    measureAboutStory();
+    aboutStoryPrepared = true;
   };
 
-  const placeAboutStoryCopies = () => {
-    if (aboutStoryStartY === null || !aboutScene || !aboutStoryCopies.length) return;
-    const sceneStartY = window.scrollY + aboutScene.getBoundingClientRect().top;
-    const firstCopyTop = aboutStoryStartY + window.innerHeight - sceneStartY;
-    aboutStoryCopies.forEach((copy, index) => {
-      const precedingDistance = aboutStoryTravel.slice(0, index).reduce((sum, distance) => sum + distance, 0);
-      copy.style.top = `${firstCopyTop + precedingDistance}px`;
-    });
-  };
-
-  const updateAboutStory = () => {
-    if (!aboutScene || !window.matchMedia("(min-width: 1200px)").matches) return;
-    if (!aboutStoryReady) initAboutStory();
-    if (!aboutStoryReady) return;
-
-    const sceneStartY = window.scrollY + aboutScene.getBoundingClientRect().top;
-    const stickyTop = Number.parseFloat(getComputedStyle(aboutIntro).top) || 0;
-    aboutPinStartY = sceneStartY - stickyTop;
-
-    if (window.scrollY < aboutPinStartY && aboutStoryStartY !== null) {
-      aboutStoryStartY = null;
-      aboutStoryCopies.forEach((copy) => {
-        copy.style.top = "-10000px";
-        copy.dataset.highlightedCount = "0";
-        copy.querySelectorAll("span.is-highlighted").forEach((span) => span.classList.remove("is-highlighted"));
-      });
-      measureAboutStory();
+  const observeAboutStoryCenter = () => {
+    if (!aboutLayout || !aboutTrigger || !aboutStoryPrepared || aboutLayout.classList.contains("is-visible")) return;
+    aboutRevealObserver?.disconnect();
+    if (reducedMotion.matches || !("IntersectionObserver" in window)) {
+      aboutLayout.classList.add("is-visible");
+      return;
     }
-    if (aboutStoryStartY === null && window.scrollY >= aboutPinStartY) {
-      aboutStoryStartY = window.scrollY;
-      placeAboutStoryCopies();
-      measureAboutStory();
-    }
-    if (aboutStoryStartY === null) return;
-
-    let elapsed = Math.max(0, window.scrollY - aboutStoryStartY);
-    const photoTop = aboutPortrait.getBoundingClientRect().top;
-    const fillDistance = Math.max(1, window.innerHeight - photoTop);
-    aboutStoryCopies.forEach((copy, index) => {
-      const distance = aboutStoryTravel[index] || window.innerHeight;
-      const fillProgress = Math.min(1, Math.max(0, elapsed / fillDistance));
-      const spans = copy.children;
-      const highlightedCount = Math.floor(fillProgress * spans.length);
-      const previousCount = Number(copy.dataset.highlightedCount || 0);
-      if (highlightedCount > previousCount) {
-        for (let characterIndex = previousCount; characterIndex < highlightedCount; characterIndex += 1) {
-          spans[characterIndex].classList.add("is-highlighted");
-        }
-      } else if (highlightedCount < previousCount) {
-        for (let characterIndex = highlightedCount; characterIndex < previousCount; characterIndex += 1) {
-          spans[characterIndex].classList.remove("is-highlighted");
-        }
-      }
-      copy.dataset.highlightedCount = String(highlightedCount);
-      elapsed = Math.max(0, elapsed - distance);
+    const centerInset = Math.max(0, Math.round(window.innerHeight / 2) - 1);
+    aboutRevealObserver = new IntersectionObserver(([entry]) => {
+      if (!entry.isIntersecting) return;
+      aboutLayout.classList.add("is-visible");
+      aboutRevealObserver.disconnect();
+    }, {
+      rootMargin: `-${centerInset}px 0px -${centerInset}px 0px`,
+      threshold: 0
     });
+    aboutRevealObserver.observe(aboutTrigger);
   };
 
   const requestParallaxUpdate = () => {
@@ -782,7 +725,6 @@
     scrollingUp = currentScrollY < previousScrollY;
     previousScrollY = currentScrollY;
     syncScrollNav();
-    updateAboutStory();
     requestParallaxUpdate();
   };
 
@@ -870,18 +812,14 @@
     previousScrollY = window.scrollY;
     scrollingUp = false;
     syncScrollNav();
-    measureAboutStory();
-    if (aboutStoryStartY !== null) placeAboutStoryCopies();
-    updateAboutStory();
+    observeAboutStoryCenter();
     requestParallaxUpdate();
   });
   reducedMotion.addEventListener?.("change", requestParallaxUpdate);
   document.fonts.ready.then(initHeadingReveal);
   document.fonts.ready.then(() => {
     initAboutStory();
-    measureAboutStory();
-    if (aboutStoryStartY !== null) placeAboutStoryCopies();
-    updateAboutStory();
+    observeAboutStoryCenter();
   });
   syncScrollNav();
   updateParallax();
