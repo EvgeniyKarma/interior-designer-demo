@@ -538,7 +538,6 @@ h3 { font-size: 2rem; line-height: 1.2; }
   .about__content { display: none; }
   .about__desktop-scene { display: block; color: var(--white); }
   .about__desktop-layout { position: relative; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: stretch; gap: 4.375rem; }
-  .about__desktop-trigger { position: absolute; top: 50%; left: 50%; width: 1px; height: 1px; pointer-events: none; }
   .about__desktop-title { align-self: start; min-width: 0; }
   .about__desktop-title .eyebrow { margin-bottom: .5rem; color: var(--white); opacity: .7; }
   .about__desktop-title h2 { max-width: 100%; font-size: clamp(2rem, 2.5vw, 3rem); line-height: 1; }

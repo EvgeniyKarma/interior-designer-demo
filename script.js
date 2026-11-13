@@ -596,7 +596,25 @@
 
     const renderLines = (target, container) => {
       const original = target.dataset.headingText ?? target.textContent.trim();
+      target.dataset.headingText = original;
       const wasVisible = container.classList.contains("heading-motion-visible");
+      const explicitLines = target.dataset.headingLines?.split("|");
+      if (explicitLines?.length) {
+        target.replaceChildren(...explicitLines.map((line, index) => {
+          const mask = document.createElement("span");
+          const content = document.createElement("span");
+          mask.className = "heading-line-mask";
+          content.className = "heading-line-content";
+          content.style.transitionDelay = `${index * 75}ms`;
+          content.textContent = line;
+          mask.append(content);
+          return mask;
+        }));
+        container.classList.add("heading-motion-ready");
+        if (wasVisible) container.classList.add("heading-motion-visible");
+        containers.set(container, target);
+        return;
+      }
       target.textContent = original;
       const textNode = target.firstChild;
       if (!textNode || textNode.nodeType !== Node.TEXT_NODE || !original) return;
@@ -675,12 +693,11 @@
 
   const aboutScene = document.querySelector(".about__desktop-scene");
   const aboutLayout = aboutScene?.querySelector(".about__desktop-layout");
-  const aboutTrigger = aboutScene?.querySelector(".about__desktop-trigger");
   const aboutStoryCopies = aboutScene ? [...aboutScene.querySelectorAll(".about__desktop-copy")] : [];
   let aboutStoryPrepared = false;
 
   const initAboutStory = () => {
-    if (!aboutLayout || !aboutTrigger || !aboutStoryCopies.length || aboutStoryPrepared || !window.matchMedia("(min-width: 1200px)").matches) return;
+    if (!aboutLayout || !aboutStoryCopies.length || aboutStoryPrepared || !window.matchMedia("(min-width: 1200px)").matches) return;
     const segmenter = typeof Intl.Segmenter === "function" ? new Intl.Segmenter("ru", { granularity: "grapheme" }) : null;
     aboutStoryCopies.forEach((copy) => {
       const text = copy.textContent;
@@ -703,11 +720,13 @@
     aboutStoryPrepared = true;
   };
 
-  const revealAboutStoryAtCenter = () => {
-    if (!aboutLayout || !aboutTrigger || aboutLayout.classList.contains("is-visible")) return;
+  const revealAboutStoryWhenTopReachesCenter = () => {
+    if (!aboutLayout || aboutLayout.classList.contains("is-visible")) return;
     if (!aboutStoryPrepared) initAboutStory();
     if (!aboutStoryPrepared) return;
-    if (reducedMotion.matches || aboutTrigger.getBoundingClientRect().top <= window.innerHeight / 2) {
+    const layoutRect = aboutLayout.getBoundingClientRect();
+    const layoutCenter = layoutRect.top + layoutRect.height / 2;
+    if (reducedMotion.matches || layoutCenter <= window.innerHeight / 2) {
       aboutLayout.classList.add("is-visible");
     }
   };
@@ -721,7 +740,7 @@
     scrollingUp = currentScrollY < previousScrollY;
     previousScrollY = currentScrollY;
     syncScrollNav();
-    revealAboutStoryAtCenter();
+    revealAboutStoryWhenTopReachesCenter();
     requestParallaxUpdate();
   };
 
@@ -809,14 +828,14 @@
     previousScrollY = window.scrollY;
     scrollingUp = false;
     syncScrollNav();
-    revealAboutStoryAtCenter();
+    revealAboutStoryWhenTopReachesCenter();
     requestParallaxUpdate();
   });
   reducedMotion.addEventListener?.("change", requestParallaxUpdate);
   document.fonts.ready.then(initHeadingReveal);
   document.fonts.ready.then(() => {
     initAboutStory();
-    revealAboutStoryAtCenter();
+    revealAboutStoryWhenTopReachesCenter();
   });
   syncScrollNav();
   updateParallax();
