@@ -698,7 +698,9 @@
   };
 
   const observeAboutStoryCenter = () => {
-    if (!aboutLayout || !aboutTrigger || !aboutStoryPrepared || aboutLayout.classList.contains("is-visible")) return;
+    if (!aboutLayout || !aboutTrigger || aboutLayout.classList.contains("is-visible")) return;
+    if (!aboutStoryPrepared) initAboutStory();
+    if (!aboutStoryPrepared) return;
     aboutRevealObserver?.disconnect();
     if (reducedMotion.matches || !("IntersectionObserver" in window)) {
       aboutLayout.classList.add("is-visible");
