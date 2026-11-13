@@ -694,6 +694,7 @@
   const aboutScene = document.querySelector(".about__desktop-scene");
   const aboutLayout = aboutScene?.querySelector(".about__desktop-layout");
   const aboutStoryCopies = aboutScene ? [...aboutScene.querySelectorAll(".about__desktop-copy")] : [];
+  const aboutRevealBottomOffset = 300;
   let aboutStoryPrepared = false;
 
   const initAboutStory = () => {
@@ -726,7 +727,7 @@
     if (!aboutStoryPrepared) return;
     const layoutRect = aboutLayout.getBoundingClientRect();
     const layoutCenter = layoutRect.top + layoutRect.height / 2;
-    if (reducedMotion.matches || layoutCenter <= window.innerHeight / 2) {
+    if (reducedMotion.matches || layoutCenter <= window.innerHeight - aboutRevealBottomOffset) {
       aboutLayout.classList.add("is-visible");
     }
   };
