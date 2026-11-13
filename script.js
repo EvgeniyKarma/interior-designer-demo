@@ -686,13 +686,20 @@
     aboutStoryCopies.forEach((copy) => {
       const text = copy.textContent;
       const characters = segmenter ? [...segmenter.segment(text)].map((part) => part.segment) : Array.from(text);
-      copy.replaceChildren(...characters.map((character, index) => {
+      const visualText = document.createElement("span");
+      visualText.className = "about__desktop-copy-visual";
+      visualText.setAttribute("aria-hidden", "true");
+      visualText.append(...characters.map((character, index) => {
         const span = document.createElement("span");
         span.textContent = character;
         const progress = characters.length > 1 ? index / (characters.length - 1) : 0;
         span.style.setProperty("--about-char-delay", `${Math.round(progress * 900)}ms`);
         return span;
       }));
+      const accessibleText = document.createElement("span");
+      accessibleText.className = "about__desktop-copy-accessible";
+      accessibleText.textContent = text;
+      copy.replaceChildren(visualText, accessibleText);
     });
     aboutStoryPrepared = true;
   };
