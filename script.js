@@ -726,8 +726,7 @@
     if (!aboutStoryPrepared) initAboutStory();
     if (!aboutStoryPrepared) return;
     const layoutRect = aboutLayout.getBoundingClientRect();
-    const layoutCenter = layoutRect.top + layoutRect.height / 2;
-    if (reducedMotion.matches || layoutCenter <= window.innerHeight - aboutRevealBottomOffset) {
+    if (reducedMotion.matches || layoutRect.top <= window.innerHeight - aboutRevealBottomOffset) {
       aboutLayout.classList.add("is-visible");
     }
   };
