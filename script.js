@@ -678,7 +678,6 @@
   const aboutTrigger = aboutScene?.querySelector(".about__desktop-trigger");
   const aboutStoryCopies = aboutScene ? [...aboutScene.querySelectorAll(".about__desktop-copy")] : [];
   let aboutStoryPrepared = false;
-  let aboutRevealObserver = null;
 
   const initAboutStory = () => {
     if (!aboutLayout || !aboutTrigger || !aboutStoryCopies.length || aboutStoryPrepared || !window.matchMedia("(min-width: 1200px)").matches) return;
@@ -704,25 +703,13 @@
     aboutStoryPrepared = true;
   };
 
-  const observeAboutStoryCenter = () => {
+  const revealAboutStoryAtCenter = () => {
     if (!aboutLayout || !aboutTrigger || aboutLayout.classList.contains("is-visible")) return;
     if (!aboutStoryPrepared) initAboutStory();
     if (!aboutStoryPrepared) return;
-    aboutRevealObserver?.disconnect();
-    if (reducedMotion.matches || !("IntersectionObserver" in window)) {
+    if (reducedMotion.matches || aboutTrigger.getBoundingClientRect().top <= window.innerHeight / 2) {
       aboutLayout.classList.add("is-visible");
-      return;
     }
-    const centerInset = Math.max(0, Math.round(window.innerHeight / 2) - 1);
-    aboutRevealObserver = new IntersectionObserver(([entry]) => {
-      if (!entry.isIntersecting) return;
-      aboutLayout.classList.add("is-visible");
-      aboutRevealObserver.disconnect();
-    }, {
-      rootMargin: `-${centerInset}px 0px -${centerInset}px 0px`,
-      threshold: 0
-    });
-    aboutRevealObserver.observe(aboutTrigger);
   };
 
   const requestParallaxUpdate = () => {
@@ -734,6 +721,7 @@
     scrollingUp = currentScrollY < previousScrollY;
     previousScrollY = currentScrollY;
     syncScrollNav();
+    revealAboutStoryAtCenter();
     requestParallaxUpdate();
   };
 
@@ -821,14 +809,14 @@
     previousScrollY = window.scrollY;
     scrollingUp = false;
     syncScrollNav();
-    observeAboutStoryCenter();
+    revealAboutStoryAtCenter();
     requestParallaxUpdate();
   });
   reducedMotion.addEventListener?.("change", requestParallaxUpdate);
   document.fonts.ready.then(initHeadingReveal);
   document.fonts.ready.then(() => {
     initAboutStory();
-    observeAboutStoryCenter();
+    revealAboutStoryAtCenter();
   });
   syncScrollNav();
   updateParallax();
