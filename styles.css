@@ -558,6 +558,19 @@ h3 { font-size: 2rem; line-height: 1.2; }
 
 @media (max-width: 1199px) { .about__desktop-scene { display: none; } }
 
+@media (min-width: 601px) and (max-width: 1199px) {
+  .about__title h2 { max-width: 598px; }
+  .about__lead { font-size: 32px; line-height: 1.2; }
+  .about__copy .text-link { border-bottom-width: 2px; }
+  .about__portrait img[data-parallax] {
+    top: -152px;
+    left: 50%;
+    width: 100%;
+    height: auto;
+    transform: translate3d(-50%, var(--parallax-offset, 0px), 0);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) and (min-width: 1200px) {
   .about__desktop-portrait { clip-path: inset(0); transition: none; }
   .about__desktop-copy,
@@ -762,7 +775,8 @@ h3 { font-size: 2rem; line-height: 1.2; }
   .works-grid { grid-template-columns: 1fr; grid-template-areas: none; gap: 70px; }
   .work-card--one,.work-card--two,.work-card--three,.work-card--six,.work-card--four,.work-card--five { grid-area: auto; }
   .work-card__media { height: 640px; aspect-ratio: auto; }
-  .about__content { display: flex; flex-direction: column; gap: 70px; }
+  .about__content { display: flex; flex-direction: column; align-items: stretch; gap: 70px; }
+  .about__title { width: 100%; }
   .about__main { display: flex; width: 100%; flex-direction: column; gap: 40px; }
   .about__portrait { height: 600px; aspect-ratio: auto; }
   .about__portrait img { object-position: center 35%; }
@@ -864,11 +878,20 @@ h3 { font-size: 2rem; line-height: 1.2; }
   .project-gallery__close { gap: .5rem; }
   .project-gallery__close img { width: 1.25rem; height: 1.25rem; }
   .about__content { gap: 40px; }
+  .about__title h2 { max-width: 100%; }
   .about__main { gap: 24px; }
   .about__portrait { height: 520px; aspect-ratio: auto; }
-  .about__portrait img { object-position: center 35%; }
+  .about__portrait img[data-parallax] {
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: calc(100% + 13px);
+    object-position: center top;
+    transform: translate3d(0, var(--parallax-offset, 0px), 0);
+  }
   .about__copy { gap: 24px; }
   .about__text { gap: 24px; }
+  .about__lead { font-size: 24px; line-height: 1.2; }
   .about__copy .text-link { margin-top: 0; }
   .services { gap: 40px; }
   .services__heading { margin-bottom: 0; }
